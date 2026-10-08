@@ -190,8 +190,9 @@ def build_card(store: Store, uid: int, now_ts: int) -> dict | None:
         ans = answer_for(v)
         hi_s, en_s = texts.fresh_sentence(meta["name"], p, v, age)
         en_band, hi_band = band_names(v)
+        # spec: a fresh reading needs no promise; "Hold me to it" is for estimates only
         card.update(state="fresh", value=v, answer=ans, band_en=en_band, band_hi=hi_band,
-                    sentence_hi=hi_s, sentence_en=en_s, interval=None, can_hold=True,
+                    sentence_hi=hi_s, sentence_en=en_s, interval=None, can_hold=False,
                     **_answer_texts(ans))
         return card
     est = _estimate_for(store, meta, p, last, now_ts, get_cams(store))

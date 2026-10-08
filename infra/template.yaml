@@ -127,6 +127,7 @@ Resources:
       Environment:
         Variables:
           STATE_MACHINE_ARN: !Ref HoldStateMachine
+          SES_SENDER: !Ref SesSender
           DEFAULT_STATION_UID: !Ref DefaultStationUid
           BEDROCK_MODEL_ID: !Ref BedrockModelId
           BEDROCK_REGION: !Ref AWS::Region
