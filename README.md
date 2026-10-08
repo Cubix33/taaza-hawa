@@ -27,7 +27,7 @@ Nobody shows people **how old** the number is, gives them an honest estimate whe
 | **1. One answer** | **जाओ** (Go) · **10 बजे के बाद** (Wait till 10) · **अंदर रहो** (Stay in), from a fixed, published rule on the CPCB AQI bands. |
 | **2. The Taaza badge** | Every number shows its **age** and **source**, always. |
 | **3. A range when it's stale** | If the nearest reading is over 3 h old, the app shows *"act as if 232–264"*, a split-conformal interval built from the 3 nearest live stations plus bias-corrected CAMS. The decision uses the top of the range. |
-| **4. हमें परखो — Hold me to it** | One tap records the promise. An **AWS Step Functions** execution waits, at no compute cost, until the station reports again. |
+| **4. जाँचकर बताओ (Check it and tell me)** | One tap records the promise. An **AWS Step Functions** execution waits, at no compute cost, until the station reports again. |
 | **5. The grade** | The station's own next reading decides: **सही (Hit)** or **चूक by N (Missed)**. No model judges itself. |
 | **6. The Scoreboard** | Every Delhi station, every morning: Hit / Missed / Pending, misses shown as loudly as hits. |
 
@@ -42,7 +42,7 @@ flowchart LR
   P --> D[(DynamoDB<br/>readings · calibration<br/>promises · task tokens)]
   W[Web app<br/>Amplify Hosting] -->|Function URL| A[Lambda: API]
   A --> D
-  A -->|हमें परखो| SF[Step Functions<br/>waitForTaskToken]
+  A -->|जाँचकर बताओ| SF[Step Functions<br/>waitForTaskToken]
   SF --> R[Lambda: register token] --> D
   P -->|station reports again<br/>SendTaskSuccess| SF
   SF --> N[Lambda: notify] --> E[SES receipt email]
@@ -133,7 +133,7 @@ Built during the hack window (8–11 Oct 2026). Open work is tracked as [issues]
 - [x] Backend deployed to AWS
 - [ ] Live WAQI scale check (K3) and real Dwarka default station
 - [ ] CPCB bulletin parser checked on a real PDF
-- [ ] End-to-end हमें परखो loop recorded on AWS
+- [ ] End-to-end "check it and tell me" loop recorded on AWS
 - [ ] Demo film and AWS Builder Center blog
 
 ## Research behind it

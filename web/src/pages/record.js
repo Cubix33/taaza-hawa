@@ -26,7 +26,7 @@ export function view() {
   const real = state.board;
   if (!real) return `<section class="page-head wrap"><div><p class="eyebrow">${t("navRecord")}</p><h1 class="page-title">${t("board")}</h1></div></section><div class="wrap"><div class="panel sk"><div class="sk-g"></div></div></div>`;
   // Until 5 real checks exist, show a clearly labelled example (switchable); never mix it with real data.
-  const realGraded = real.accuracy?.graded ?? 0;
+  const realGraded = real.accuracy?.graded ?? (real.tally.HIT + real.tally.MISSED + real.tally.MISSED_WAITING);
   const canExample = realGraded < FEW;
   const example = canExample && state.recordView !== "real";
   const b = example ? exampleBoard(real) : real;

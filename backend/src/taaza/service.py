@@ -190,7 +190,7 @@ def build_card(store: Store, uid: int, now_ts: int) -> dict | None:
         ans = answer_for(v)
         hi_s, en_s = texts.fresh_sentence(meta["name"], p, v, age)
         en_band, hi_band = band_names(v)
-        # spec: a fresh reading needs no promise; "Hold me to it" is for estimates only
+        # spec: a fresh reading needs no promise; "Check it and tell me" is for estimates only
         card.update(state="fresh", value=v, answer=ans, band_en=en_band, band_hi=hi_band,
                     sentence_hi=hi_s, sentence_en=en_s, interval=None, can_hold=False,
                     **_answer_texts(ans))
@@ -321,7 +321,7 @@ def ensure_morning(store: Store, now_ts: int) -> int:
 
 
 def recent_holds(store: Store, limit: int = 20) -> list[dict]:
-    """Latest "Hold me to it" promises across all stations, for the public record (no emails)."""
+    """Latest "Check it and tell me" promises across all stations, for the public record (no emails)."""
     items = []
     for uid in list_stations(store):
         items.extend(store.query(f"PRED#{uid}", prefix="HOLD#"))
