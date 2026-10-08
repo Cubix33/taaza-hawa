@@ -32,7 +32,7 @@ export function view() {
   const anyRow = b.rows.some((r) => Object.keys(r.days).length);
   const fmt = (d) => new Date(d + "T00:00:00").toLocaleDateString(hi() ? "hi-IN" : "en-IN", { day: "numeric", month: "short" });
   const since = (ts) => ageText(Math.max(0, Math.floor((b.now - ts) / 60)));
-  return `<section class="page-head wrap"><div><p class="eyebrow">${t("navRecord")}</p><h1 class="page-title">${t("board")}</h1><p class="page-lead">${t("boardIntro")}</p></div></section>
+  return `<section class="page-head wrap"><div><h1 class="page-title">${t("board")}</h1><p class="page-lead">${t("boardIntro")}</p></div></section>
   <div class="wrap">
     <section class="rec-summary panel">
       <div class="rs-ring">${ring(rate)}<span>${rate != null ? t("rateL") : t("stRatePending")}</span></div>

@@ -8,6 +8,7 @@ export const t = (k, ...a) => { const v = T[state.lang][k] ?? T.en[k] ?? k; retu
 export const T = {
   hi: {
     brand: "ताज़ा हवा", tagline: "दिल्ली की हवा, सीधी बात",
+    tabs: ["होम", "मेरी हवा", "नक्शा", "रिकॉर्ड", "जानकारी"],
     navHome: "होम", navCheck: "अपनी हवा देखें", navStations: "3D नक्शा", navRecord: "हमारा रिकॉर्ड", navAbout: "कैसे काम करता है",
 
     // home
@@ -142,6 +143,7 @@ export const T = {
   },
   en: {
     brand: "Taaza Hawa", tagline: "Delhi's air, in plain words",
+    tabs: ["Home", "My air", "Map", "Record", "About"],
     navHome: "Home", navCheck: "Check my air", navStations: "3D map", navRecord: "Track record", navAbout: "How it works",
 
     heroAsk: "Can I go outside right now?",

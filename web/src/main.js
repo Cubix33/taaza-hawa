@@ -41,7 +41,7 @@ function layout() {
     <nav class="foot-nav" aria-label="footer">${NAV.map(([r, k]) => `<a href="#/${r === "home" ? "" : r}">${t(k)}</a>`).join("")}</nav>
     <div class="foot-meta"><p>${t("footData")}</p><a href="https://github.com/Cubix33/taaza-hawa" target="_blank" rel="noopener">GitHub ↗</a></div>
   </div></footer>
-  <nav class="tabbar" aria-label="main">${NAV.map(([r, k, ic]) => `<a href="#/${r === "home" ? "" : r}" class="${state.route === r ? "on" : ""}">${ic}<span>${t(k)}</span></a>`).join("")}</nav>`;
+  <nav class="tabbar" aria-label="main">${NAV.map(([r, k, ic], i) => `<a href="#/${r === "home" ? "" : r}" class="${state.route === r ? "on" : ""}" aria-label="${t(k)}">${ic}<span>${t("tabs")[i]}</span></a>`).join("")}</nav>`;
 }
 
 function errorView() {

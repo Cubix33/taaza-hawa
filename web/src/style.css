@@ -544,3 +544,39 @@ html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
   .m3-legend { right: 12px; }
 }
 .m3-sep { margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--line); }
+
+/* ===== mobile pass ===== */
+@media (max-width: 1080px) {
+  /* check page: the answer, then "Hold me to it", then the details; the long station list last */
+  .cols { display: flex; flex-direction: column; gap: 20px; }
+  .col-a, .col-b { display: contents; }
+  .hero-card { order: 1; } .col-b > * { order: 2; } .facts { order: 3; } .allst { order: 4; }
+  .col-b > .link-panel { order: 5; }
+}
+@media (max-width: 760px) {
+  .sec { padding-top: 56px; padding-bottom: 56px; }
+  .tabbar a { font-size: .74rem; padding: 6px 2px; }
+  /* finger-sized tap targets */
+  .chip-btn { height: 40px; padding: 0 14px; }
+  .foot-nav a, .foot-meta a { display: inline-flex; align-items: center; min-height: 44px; }
+  .foot-nav { gap: 0 24px; }
+  .ac-oldest a { display: inline-flex; align-items: center; min-height: 40px; }
+  .g-name { display: flex; align-items: center; min-height: 40px; }
+  .m3-tools { gap: 8px; }
+  /* map: legend below the map so it never fights the map credit */
+  .m3-frame { overflow: visible; border: 0; box-shadow: none; background: none; }
+  .map3d { border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); }
+  .m3-legend { position: static; margin-top: 10px; background: var(--surface); }
+  .rec-summary .tally { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tally div { padding: 12px; } .tally b { font-size: 1.8rem; }
+  .what { margin-top: 18px; }
+}
+/* touch screens of any width (tablets too): finger-sized targets */
+@media (pointer: coarse) {
+  .chip-btn { height: 40px; padding: 0 14px; }
+  .mainnav a { display: inline-flex; align-items: center; min-height: 44px; }
+  .foot-nav a, .foot-meta a { display: inline-flex; align-items: center; min-height: 44px; }
+  .ac-oldest a, .g-name { display: inline-flex; align-items: center; min-height: 40px; }
+}
+@media (max-width: 1080px) { .sky .sun { display: none; } }
+.sheet .why { max-width: 540px; }
