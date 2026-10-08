@@ -625,3 +625,14 @@ html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
 }
 @media (pointer: coarse) { .acc-list a { display: inline-flex; align-items: center; min-height: 40px; } }
 @media (max-width: 760px) { .tr-t { font-size: 20px; } .tr-gap-t { font-size: 22px; } .tr-line { stroke-width: 3; } }
+
+/* labelled example on the record page: impossible to mistake for real data */
+.ex-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 14px 18px; border-radius: 14px; border: 1.5px dashed var(--line); background: var(--surface); }
+.ex-banner.on { border-color: var(--ochre); background: repeating-linear-gradient(-45deg, var(--ochre-soft) 0 12px, transparent 12px 24px), var(--surface); }
+.ex-banner p { margin: 0; max-width: 70ch; font-weight: 600; }
+.ex-banner .btn { height: 42px; }
+.is-example .panel { position: relative; }
+.is-example .rec-summary::before, .is-example .acc::before, .is-example .grid::before, .is-example .recent::before {
+  content: var(--ex-tag); position: absolute; top: 12px; right: 14px; padding: 2px 10px; border-radius: 6px; border: 1.5px solid var(--ochre); color: var(--ochre); font: 600 .78rem var(--sans); background: var(--ochre-soft); z-index: 1;
+}
+.is-example .grid { position: relative; padding-top: 40px; }
