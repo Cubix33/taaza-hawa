@@ -6,7 +6,7 @@
 
 **Delhi's air-quality number, with its age. An honest range when it's old. A public grade when the truth arrives.**
 
-`Air track` · WeMakeDevs × AWS Environmental Hacks 2026 · Serverless on AWS
+`Air track` · WeMakeDevs × AWS Environmental Hacks 2026 · Serverless on AWS ·  [AWS Amplify deployed link](https://main.d2r1frd99buxhf.amplifyapp.com/)
 
 </div>
 
