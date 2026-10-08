@@ -89,3 +89,12 @@ def test_estimate_degrades_to_last_value_and_says_so():
     e = estimate(28.6, 77.0, [], None, {}, 40.0, last_value=180)
     assert e.degraded and not e.calibrated and e.lo < 180 < e.hi
     assert estimate(28.6, 77.0, [], None, {}, 40.0, last_value=None) is None
+
+
+def test_stale_sentence_never_claims_zero_neighbours():
+    from taaza.texts import stale_sentence
+    hi, en = stale_sentence("Dwarka Sector 8", 35 * 60, 182, 332, 0, False, False)
+    assert "0 " not in en.split("(")[1] and "only the last reading" in en
+    assert "सिर्फ़ आख़िरी रीडिंग" in hi
+    hi, en = stale_sentence("X", 300, 1, 2, 3, True, True)
+    assert "3 live neighbouring stations, bias-corrected CAMS" in en

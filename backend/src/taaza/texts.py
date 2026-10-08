@@ -22,8 +22,11 @@ def fresh_sentence(name: str, pollutant: str, value: int, age_min: int) -> tuple
 
 def stale_sentence(name: str, age_min: int, lo: int, hi_: int, n_nb: int, used_cams: bool,
                    calibrated: bool) -> tuple[str, str]:
-    inputs_hi = f"{n_nb} चालू पड़ोसी स्टेशन" + (", सुधारा हुआ CAMS" if used_cams else "")
-    inputs_en = f"{n_nb} live neighbouring stations" + (", bias-corrected CAMS" if used_cams else "")
+    parts_hi = ([f"{n_nb} चालू पड़ोसी स्टेशन"] if n_nb else []) + (["सुधारा हुआ CAMS"] if used_cams else [])
+    parts_en = ([f"{n_nb} live neighbouring stations"] if n_nb else []) + (["bias-corrected CAMS"] if used_cams else [])
+    # degraded estimate: no live neighbour and no trusted CAMS, only the old value widened for its age
+    inputs_hi = ", ".join(parts_hi) or "सिर्फ़ आख़िरी रीडिंग, उम्र के हिसाब से चौड़ा किया दायरा"
+    inputs_en = ", ".join(parts_en) or "only the last reading, widened for its age"
     cal_hi = "" if calibrated else " (अभी कैलिब्रेशन जारी है)"
     cal_en = "" if calibrated else " (calibration still warming up)"
     hi = (f"{name} की नवीनतम रीडिंग {human_age_hi(age_min)} पुरानी है। "
