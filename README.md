@@ -1,103 +1,148 @@
-# Environmental Hacks — Ideation & Architectural Research
-> **Event:** WeMakeDevs × AWS Environmental Hacks (Oct 8–11, 2026)  
-> **Tracks:** Air · Heat & Water · Waste & Energy  
-> **Current Status:** 🔬 **Ideation & Feasibility Phase** (Pre-Clock Architecture & Research)
+<div align="center">
+
+# ताज़ा हवा · Taaza Hawa
+
+### अभी बाहर जाऊँ? — *Can I go outside right now?*
+
+**Delhi's air-quality number, with its age. An honest range when it's old. A public grade when the truth arrives.**
+
+`Air track` · WeMakeDevs × AWS Environmental Hacks 2026 · Serverless on AWS
+
+</div>
 
 ---
 
-## 🛠️ Build status (Oct 8)
+## The problem
 
-Code lives in three folders. Core logic is pure Python and unit-tested; AWS is only at the edges.
+Every October morning a Delhi resident checks one number before a run, a walk, or sending a child to practice. That number has **no age, no source and no error bar**.
 
-| Path | What |
+It is often old. On 4 Oct 2026 the mirror most people use showed Anand Vihar **31 hours** stale and NSIT Dwarka **56 hours** stale ([R2](docs/wayfinder/research/R2-data-feeds-audit.md)). CPCB's own bulletin shows 2–3 of 46 Delhi stations not reporting on an ordinary day ([R1](docs/wayfinder/research/R1-delhi-ground-truth-oct-2026.md)). Last season's loudest complaint on r/delhi was not *"what is the AQI"* but *"can I trust it"* ([R7](docs/wayfinder/research/R7-citizen-friction-mining.md)).
+
+Nobody shows people **how old** the number is, gives them an honest estimate when it's stale, and then **checks that estimate in public**.
+
+## What Taaza Hawa does
+
+| | |
 |---|---|
-| `backend/src/taaza/` | CPCB sub-index + fixed answer rule, staleness, split-conformal intervals, neighbour/CAMS estimator, deterministic grader, storage, Hindi copy |
-| `backend/src/handlers/` | Lambda handlers: `poller` (poll / morning / bulletin), `api` (Function URL), `hold_tasks` (Step Functions) |
-| `infra/` | SAM `template.yaml` + `hold.asl.json` (the `waitForTaskToken` receipt) |
-| `web/` | Vite PWA: one card, Hindi/English, interval bar, "हमें परखो", Scoreboard |
+| **1. One answer** | **जाओ** (Go) · **10 बजे के बाद** (Wait till 10) · **अंदर रहो** (Stay in), from a fixed, published rule on the CPCB AQI bands. |
+| **2. The Taaza badge** | Every number shows its **age** and **source**, always. |
+| **3. A range when it's stale** | If the nearest reading is over 3 h old, the app shows *"act as if 232–264"*, a split-conformal interval built from the 3 nearest live stations plus bias-corrected CAMS. The decision uses the top of the range. |
+| **4. हमें परखो — Hold me to it** | One tap records the promise. An **AWS Step Functions** execution waits, at no compute cost, until the station reports again. |
+| **5. The grade** | The station's own next reading decides: **सही (Hit)** or **चूक by N (Missed)**. No model judges itself. |
+| **6. The Scoreboard** | Every Delhi station, every morning: Hit / Missed / Pending, misses shown as loudly as hits. |
+
+> **Honesty line.** We say: reading age, the named source, the range and its inputs, Hit / Missed, and CPCB's own participation count, quoted. We never say a station is "dark" or "tampered", never claim a "true AQI", never assign blame, and never make health-outcome claims. *Station air, not your street. An estimate, not the truth.*
+
+## Architecture
+
+```mermaid
+flowchart LR
+  S[EventBridge Scheduler<br/>15 min · 06:30 · 17:30 IST] --> P[Lambda: poller]
+  P -->|WAQI stations<br/>Open-Meteo CAMS<br/>CPCB bulletin PDF| P
+  P --> D[(DynamoDB<br/>readings · calibration<br/>promises · task tokens)]
+  W[Web app<br/>Amplify Hosting] -->|Function URL| A[Lambda: API]
+  A --> D
+  A -->|हमें परखो| SF[Step Functions<br/>waitForTaskToken]
+  SF --> R[Lambda: register token] --> D
+  P -->|station reports again<br/>SendTaskSuccess| SF
+  SF --> N[Lambda: notify] --> E[SES receipt email]
+  A -.optional.-> B[Bedrock · Claude Haiku 4.5<br/>Hindi phrasing only]
+```
+
+| Service | Why this one |
+|---|---|
+| **EventBridge Scheduler** | 15-minute polling plus the 06:30 and 17:30 IST jobs, with no server |
+| **Lambda** (5 functions) | Poller, API, and three steps of the receipt. Pure functions, unit-tested |
+| **DynamoDB** | One pay-per-request table: readings, calibration, promises, task tokens |
+| **Step Functions Standard** | A promise *is* a waiting execution. It can wait up to 72 h for free, and you can watch it flip from Running to Succeeded |
+| **Lambda Function URL** | A public API without API Gateway |
+| **SES** | Optional Hit / Missed receipt by email |
+| **Amplify Hosting** | Static Vite build, rebuilt on every push |
+| **CloudWatch** | Alarm when the poller keeps failing |
+| **Bedrock** *(optional)* | Rephrases one Hindi sentence. A guard rejects any change to a number; it never decides anything |
+
+## How the estimate stays honest
+
+- **Calibrated on live data.** On every poll, each fresh station is *re-estimated with its own reading hidden*, from its neighbours and CAMS. The error goes into that station's residual list. Ranges use split-conformal quantiles at 80% coverage.
+- **Says when it isn't ready.** Until a station has 20 residuals, its range is labelled *calibration warming up* and widens with the reading's age.
+- **Grades only on later readings.** A reading backfilled with an older timestamp never grades a promise.
+- **Hit or Missed by N**, plus *Missed, still waiting* after 72 h of silence.
+
+## Repository layout
+
+```
+backend/
+  src/taaza/       core logic: AQI maths, freshness, conformal, estimator, grader, store, Hindi copy
+  src/taaza/sources/  WAQI, Open-Meteo CAMS, CPCB bulletin
+  src/handlers/    Lambda entry points: poller, api, hold_tasks
+  tests/           18 unit tests, including the stale → hold → graded loop
+  local_server.py  same API locally: demo data, or --live feeds
+infra/
+  template.yaml    SAM: table, Lambdas, schedules, state machine, Function URL, alarm
+  hold.asl.json    the waitForTaskToken receipt
+web/               Vite PWA: Hindi/English, light/dark, desktop and mobile
+amplify.yml        Amplify build for web/
+docs/              research, council verdicts and the full spec
+```
+
+## Run it locally
+
+Needs Python 3.12 and Node 20+.
 
 ```bash
 # backend tests
 cd backend && python -m pytest -q
-# local demo (SYNTHETIC data, labelled "demo": true) + UI
-python backend/local_server.py          # http://localhost:8787
-cd web && npm install && npm run dev    # http://localhost:5173
-# local with real feeds
+
+# API with SYNTHETIC demo data (every response says "demo": true; the UI shows a banner)
+python backend/local_server.py            # http://localhost:8787
+
+# or with live feeds (free token: aqicn.org/data-platform/token)
 WAQI_TOKEN=... python backend/local_server.py --live
-# deploy (needs AWS CLI + SAM CLI)
-sam build -t infra/template.yaml && sam deploy --guided --region ap-south-1
+
+# web app
+cd web && npm install && npm run dev      # http://localhost:5173
 ```
 
-Dev-only: `POST /dev/return?uid=1` makes a stale demo station "come back" so the grading loop can be rehearsed.
+Demo mode only: `POST /dev/return?uid=1` makes a stale station report again, so you can rehearse a Hit.
 
----
+## Deploy to AWS
 
-## 📌 Executive Summary
+```bash
+sam build -t infra/template.yaml
+sam deploy --guided --region ap-south-1   # asks for WaqiToken (hidden); later: just `sam deploy`
+```
 
-This repository contains the pre-event architectural research, empirical data audits, and candidate evaluations for the **WeMakeDevs × AWS Environmental Hacks**.
+Then connect this repo in **Amplify Hosting**. It reads `amplify.yml`. Set `VITE_API_URL` to the stack's `ApiUrl` output.
 
-> [!NOTE]
-> **Currently in the Ideation Phase**: **Taaza Hawa (*अभी बाहर जाऊँ?*)** is our **recommended lead project** for the Air track based on data feed feasibility, technical rigor, and live applicability in Delhi-NCR. However, multiple alternative candidates across all three tracks have been researched and documented here for evaluation and review.
+| Parameter | Purpose |
+|---|---|
+| `WaqiToken` | WAQI API token (NoEcho) |
+| `DefaultStationUid` | Station shown to first-time visitors |
+| `SesSender` | Verified SES address; empty turns emails off |
+| `BedrockModelId` | e.g. `in.anthropic.claude-haiku-4-5-20251001-v1:0`; empty uses the template sentence |
 
----
+Cost at hackathon scale is within the AWS Free Tier. Bedrock, if enabled, is the only per-call cost.
 
-## 🏆 Recommended Lead Idea: Taaza Hawa (*अभी बाहर जाऊँ?*)
+## Status
 
-- **Track:** Air (Track 01)
-- **Persona & Moment:** A Delhi resident (e.g. Dwarka) at 06:30 AM deciding whether to run, cycle, or keep vulnerable family members indoors.
-- **Detailed Spec:** [`docs/wayfinder/IDEA-taaza-hawa.md`](docs/wayfinder/IDEA-taaza-hawa.md)
+Built during the hack window (8–11 Oct 2026). Open work is tracked as [issues](https://github.com/Cubix33/taaza-hawa/issues):
 
-### The Core Problem
-During Delhi's critical October–November smog transition, public air monitoring data on popular mirrors frequently lags by hours to days (observed 31h+ stale on Anand Vihar, 56h+ on NSIT Dwarka). Millions of citizens make outdoor health choices based on "ghost numbers" with zero indication of reading freshness.
+- [x] Core engine, grader and calibration, with tests
+- [x] Lambda handlers, SAM stack, receipt state machine
+- [x] Web app: Hindi/English, light/dark, desktop and mobile
+- [x] Backend deployed to AWS
+- [ ] Live WAQI scale check (K3) and real Dwarka default station
+- [ ] CPCB bulletin parser checked on a real PDF
+- [ ] End-to-end हमें परखो loop recorded on AWS
+- [ ] Demo film and AWS Builder Center blog
 
-### The Solution Loop
-1. **Freshness Audit ("Taaza Badge"):** Clearly states the exact age and source of the nearest monitoring station reading.
-2. **Conformal Uncertainty Range:** If the station reading is stale (>3 hours), derives a calibrated interval based on live neighbouring stations and bias-corrected CAMS atmospheric models.
-3. **Action Verdict:** Clear decision in Hindi & English: *जाओ (Go)*, *10 बजे के बाद (Wait till 10 AM)*, or *अंदर रहो (Stay Inside)*.
-4. **"हमें परखो" (Hold Me To It):** User taps one button to lock their decision. An AWS Step Functions execution parks on `waitForTaskToken`.
-5. **Deterministic Verification:** When the physical station updates upstream, `SendTaskSuccess` closes the loop, verifying whether the actual reading fell within the promised interval (*Hit* or *Missed by N*).
-6. **Public Transparency Scoreboard:** A live 4-day ledger evaluating every Delhi station and citing CPCB's daily bulletin.
+## Research behind it
 
-### AWS Serverless Architecture
-- **EventBridge Scheduler:** Periodic scrapers (15-min cadence) and daily bulletin ingest at 17:30 IST.
-- **AWS Lambda:** Data ingestion, CPCB sub-index math, and conformal interval computation.
-- **Amazon DynamoDB:** Station history ledger, subscriptions, and task token storage.
-- **AWS Step Functions (`waitForTaskToken`):** Zero-compute asynchronous wait for station data arrival.
-- **Amazon SES:** Immutable email verification receipts.
-- **AWS Amplify Hosting:** Fast, mobile-first static PWA.
-- **Amazon Bedrock (Claude 3.5 Haiku `in.` profile):** Single-sentence native Hindi phrasing with deterministic template fallbacks.
+The idea was chosen through written research and a multi-perspective review before the clock started:
 
----
+- [Full spec](docs/wayfinder/IDEA-taaza-hawa.md)
+- [Council verdict](docs/wayfinder/council/03-verdict.md)
+- [Research R1–R8](docs/wayfinder/research/)
+- [Decision map](docs/wayfinder/MAP.md)
 
-## 🔬 Other Candidate Ideas Explored
-
-While *Taaza Hawa* is the lead recommendation, the repository documents several other evaluated directions:
-
-1. **School Activity & Inhaled-Dose Actuator ("Hawa Hold")** (`docs/research/02-software-only-dossier.md`):
-   - Computes EPA inhalation volume multipliers (light vs. high intensity) for morning school athletics.
-   - Adjusts PE intensity rather than shifting timetables.
-2. **FrameDebt — Premature Media Transfer Canary** (`docs/research/05-solo-software-search-and-framedebt.md`):
-   - Developer tooling in Waste & Energy evaluating offscreen data transfers on media-heavy web apps via AWS CloudWatch Synthetics.
-3. **Virtual Solar Twin (Rooftop PV Soiling Analysis)** (`docs/research/02-software-only-dossier.md`):
-   - Compares neighbouring residential solar outputs to decouple ambient smog from physical dust accumulation.
-
----
-
-## 📂 Repository Navigation
-
-- **[`docs/WINNER_PLAYBOOK.md`](docs/WINNER_PLAYBOOK.md)** — Architectural & design principles for high-scoring hackathon systems.
-- **[`docs/wayfinder/`](docs/wayfinder/)** — Central decision map, ground-truth research, and specifications:
-  - [`IDEA-taaza-hawa.md`](docs/wayfinder/IDEA-taaza-hawa.md) — Comprehensive technical spec for Taaza Hawa.
-  - [`MAP.md`](docs/wayfinder/MAP.md) — Research status tracker and open tickets.
-  - [`research/`](docs/wayfinder/research/) — Research reports on Delhi ground truth, data feeds, and AWS services.
-  - [`council/`](docs/wayfinder/council/) — Multi-perspective peer reviews and evaluation verdicts.
-  - [`tickets/`](docs/wayfinder/tickets/) — Detailed research tickets and pre-event milestones.
-- **[`docs/research/`](docs/research/)** — Backtests (K1 measured backtest, smoke forecast analysis) and early dossiers.
-
----
-
-## ⏱️ Next Steps (Pre-Clock Milestone)
-
-- [ ] Daily morning CPCB captcha & WAQI timestamp audits (Oct 5–7 @ ~09:00 IST).
-- [ ] AWS account verification and Bedrock model access checks.
-- [ ] Final idea confirmation prior to Oct 8 08:00 IST kickoff.
+**Data:** WAQI (aqicn.org) mirror of CPCB stations · Open-Meteo CAMS · CPCB daily AQI bulletin. Values are station air, not your street.
