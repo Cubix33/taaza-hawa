@@ -3,7 +3,7 @@ import json
 import os
 import re
 
-from taaza import phrase, service
+from taaza import phrase, service, speech
 
 from .common import now, sfn, store
 
@@ -45,6 +45,16 @@ def route(method, path, q, body, s, t, start_execution=None):
         card["ai_on"] = ai is not None
         card["email_enabled"] = email_enabled()
         return 200, card
+    if path == "/speak" and method == "GET":
+        card = service.build_card(s, int(q.get("uid") or DEFAULT_UID), t)
+        if not card:
+            return 404, {"error": "unknown station"}
+        lang = q.get("lang") if q.get("lang") in ("hi", "en") else "hi"
+        try:
+            return 200, speech.synthesize(s, speech.spoken_text(card, lang), lang)
+        except Exception as e:  # no credentials / Polly unavailable: the page falls back to the browser voice
+            print("speak failed:", repr(e))
+            return 503, {"error": "voice unavailable"}
     if path == "/scoreboard" and method == "GET":
         return 200, {**service.scoreboard(s, _recent_dates(t)), "now": t,
                      "recent_holds": service.recent_holds(s), "accuracy": service.accuracy(s)}

@@ -2,7 +2,7 @@ import "./style.css";
 import { state, set, onRender, ls } from "./lib/store.js";
 import { t, hi } from "./lib/i18n.js";
 import { esc, icon } from "./lib/ui.js";
-import { pollHold, run, loadCard } from "./lib/actions.js";
+import { pollHold, run, loadCard, stopSpeak } from "./lib/actions.js";
 import * as home from "./pages/home.js";
 import * as check from "./pages/check.js";
 import * as stations from "./pages/stations.js";
@@ -52,7 +52,7 @@ function errorView() {
 function render() {
   document.getElementById("app").innerHTML = layout();
   document.getElementById("lang")?.addEventListener("click", () => {
-    state.lang = hi() ? "en" : "hi"; ls.set("lang", state.lang); document.documentElement.lang = state.lang; render();
+    stopSpeak(); state.lang = hi() ? "en" : "hi"; ls.set("lang", state.lang); document.documentElement.lang = state.lang; render();
   });
   document.getElementById("retry")?.addEventListener("click", () => { state.error = null; PAGES[state.route].load(); });
   PAGES[state.route].bind?.();
@@ -60,6 +60,7 @@ function render() {
 onRender(render);
 
 function navigate() {
+  stopSpeak();
   const { route, params } = parseHash();
   const changed = route !== state.route;
   Object.assign(state, { route, params, error: null, pickerOpen: false });

@@ -23,6 +23,8 @@ export const state = {
   sort: "name",
   activity: ls.get("activity") || "",
   history: null,
+  voice: "",
+  voiceErr: false,
 };
 
 let _render = () => {};

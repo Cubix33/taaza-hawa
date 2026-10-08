@@ -636,3 +636,16 @@ html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
   content: var(--ex-tag); position: absolute; top: 12px; right: 14px; padding: 2px 10px; border-radius: 6px; border: 1.5px solid var(--ochre); color: var(--ochre); font: 600 .78rem var(--sans); background: var(--ochre-soft); z-index: 1;
 }
 .is-example .grid { position: relative; padding-top: 40px; }
+
+/* ===== voice button ===== */
+.card-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.card-actions .btn.wa { margin-top: 0; }
+.btn.speak { height: 44px; padding: 0 16px; font-size: .95rem; background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.speak svg { width: 20px; height: 20px; } .btn.speak:hover svg { transform: none; }
+.btn.speak.on { background: var(--ochre); border-color: var(--ochre); color: #fff; }
+.btn.speak.on[aria-pressed="true"] svg { animation: pulse-ic 1.2s ease-in-out infinite; }
+@keyframes pulse-ic { 50% { opacity: .55; } }
+.svc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1080px) { .svc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .card-actions .btn { flex: 1 1 100%; } .svc-grid { grid-template-columns: 1fr; } }
+.voice-err { margin: 8px 0 0; font-size: .9rem; color: var(--stay); }

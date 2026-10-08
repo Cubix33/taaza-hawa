@@ -4,7 +4,7 @@ import { esc, icon, BAND_COLORS } from "../lib/ui.js";
 export const load = () => Promise.resolve();
 
 const FLOW = ["EventBridge Scheduler", "Lambda · poller", "DynamoDB", "Step Functions", "Lambda · API", "Amplify Hosting"];
-const SERVICES = ["EventBridge Scheduler", "Lambda", "DynamoDB", "Step Functions", "SES", "Amplify Hosting", "CloudWatch", "Bedrock (optional)"];
+const SERVICES = ["EventBridge Scheduler", "Lambda", "DynamoDB", "Step Functions", "SES", "Amplify Hosting", "CloudWatch", "Bedrock (optional)", "Polly"];
 
 export function view() {
   return `<section class="page-head wrap"><div><p class="eyebrow">${t("navAbout")}</p><h1 class="page-title">${t("abTitle")}</h1><p class="page-lead">${t("abLead")}</p></div></section>

@@ -89,6 +89,7 @@ export const T = {
     allNow: "सभी स्टेशन: आख़िरी नंबर कब आया", freshN: "ताज़ा",
 
     // share, activity, trend, accuracy
+    listen: "सुनें", listenStop: "रोकें", listenLoad: "आवाज़ बन रही है…", listenFail: "आवाज़ अभी नहीं चल पाई।",
     share: "WhatsApp पर भेजें",
     shareMsg: (say, name, air, age, url) => `ताज़ा हवा · ${name}
 ${say}
@@ -162,6 +163,7 @@ ${url}`,
       "हर बदलाव पर यह वेबसाइट बनाता और चलाता है।",
       "नंबर लाना बार-बार फ़ेल हो तो अलार्म।",
       "एक हिंदी वाक्य को सरल बनाता है; कोई नंबर बदले तो उसे खारिज कर देते हैं।",
+      "जवाब को हिंदी या अंग्रेज़ी में बोलकर सुनाता है (Kajal आवाज़)। हर वाक्य एक बार बनता है, फिर याद रखा जाता है।",
     ],
     srcs: [["WAQI (aqicn.org)", "सरकारी CPCB / DPCC स्टेशनों के नंबर, नापे जाने के समय के साथ"], ["Open-Meteo CAMS", "मौसम-मॉडल से हवा का अनुमान (दिल्ली पर ~45 km का एक खाना)"], ["CPCB दैनिक AQI बुलेटिन", "कितने स्टेशनों ने नंबर भेजे, उसकी पंक्ति, जस की तस"]],
 
@@ -252,6 +254,7 @@ ${url}`,
     said: "Our estimate", read: "Real number", newHold: "OK",
     allNow: "All stations: when the last number came", freshN: "fresh",
 
+    listen: "Listen", listenStop: "Stop", listenLoad: "Preparing voice…", listenFail: "Couldn't play the voice right now.",
     share: "Send on WhatsApp",
     shareMsg: (say, name, air, age, url) => `Taaza Hawa · ${name}
 ${say}
@@ -322,6 +325,7 @@ ${url}`,
       "Builds and serves this website on every change.",
       "Alarm if fetching numbers keeps failing.",
       "Rephrases one Hindi sentence; a guard rejects any changed number.",
+      "Reads the answer aloud in Hindi or English (Kajal voice). Each wording is made once, then remembered.",
     ],
     srcs: [["WAQI (aqicn.org)", "numbers from government CPCB / DPCC stations, with when they were measured"], ["Open-Meteo CAMS", "weather-model air estimate (one ~45 km square over Delhi)"], ["CPCB daily AQI bulletin", "the line saying how many stations reported, quoted as is"]],
 

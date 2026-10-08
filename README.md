@@ -47,6 +47,7 @@ flowchart LR
   P -->|station reports again<br/>SendTaskSuccess| SF
   SF --> N[Lambda: notify] --> E[SES receipt email]
   A -.optional.-> B[Bedrock · Claude Haiku 4.5<br/>Hindi phrasing only]
+  A -->|सुनें| PL[Amazon Polly · Kajal<br/>spoken answer, cached]
 ```
 
 | Service | Why this one |
@@ -56,6 +57,7 @@ flowchart LR
 | **DynamoDB** | One pay-per-request table: readings, calibration, promises, task tokens |
 | **Step Functions Standard** | A promise *is* a waiting execution. It can wait up to 72 h for free, and you can watch it flip from Running to Succeeded |
 | **Lambda Function URL** | A public API without API Gateway |
+| **Polly** | The "सुनें" button reads the answer aloud in Hindi or English (neural voice Kajal, available in Mumbai). The server builds the text itself, so the endpoint cannot be used to read arbitrary text, and each wording is synthesized only once |
 | **SES** | Optional Hit / Missed receipt by email |
 | **Amplify Hosting** | Static Vite build, rebuilt on every push |
 | **CloudWatch** | Alarm when the poller keeps failing |

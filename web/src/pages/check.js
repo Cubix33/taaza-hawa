@@ -1,7 +1,7 @@
 import { state, set, ls } from "../lib/store.js";
 import { t, hi } from "../lib/i18n.js";
 import { esc, ageText, isOld, icon, gauge, scale, bandName, bandColor } from "../lib/ui.js";
-import { run, loadCard, restoreHold, goStation, startHold, addEmail } from "../lib/actions.js";
+import { run, loadCard, restoreHold, goStation, startHold, addEmail, toggleSpeak } from "../lib/actions.js";
 
 export function load() {
   const s = Number(state.params.s);
@@ -99,7 +99,10 @@ function card(c) {
         <h2 class="ans">${t("say")[c.answer]}</h2>
         <p class="advice">${t("advice")[c.answer] || ""}</p>
         ${whyList(c)}
-        ${c.answer !== "UNKNOWN" ? `<a class="btn wa" href="${shareLink(c)}" target="_blank" rel="noopener">${icon.wa}<span>${t("share")}</span></a>` : ""}
+        ${c.answer !== "UNKNOWN" ? `<div class="card-actions">
+          <button id="speak" class="btn speak ${state.voice ? "on" : ""}" aria-pressed="${!!state.voice}">${state.voice ? icon.stop : icon.speaker}<span>${state.voice === "loading" ? t("listenLoad") : state.voice ? t("listenStop") : t("listen")}</span></button>
+          <a class="btn wa" href="${shareLink(c)}" target="_blank" rel="noopener">${icon.wa}<span>${t("share")}</span></a>
+        </div>${state.voiceErr ? `<p class="voice-err">${t("listenFail")}</p>` : ""}` : ""}
       </div>
       ${v != null ? `<div class="hero-gauge">${gauge(c)}</div>` : ""}
     </div>
@@ -199,6 +202,7 @@ export function bind() {
     if (e.key === "ArrowDown") { e.preventDefault(); document.querySelector("#picklist [data-pick]")?.focus(); }
   });
   $("locate")?.addEventListener("click", locate);
+  $("speak")?.addEventListener("click", () => toggleSpeak(spokenFallback(state.card)));
   document.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => {
     const a = state.activity === b.dataset.act ? "" : b.dataset.act;
     ls.set("activity", a); set({ activity: a });
@@ -268,4 +272,15 @@ export function trendView(c) {
       <text x="${L}" y="${H - 6}" class="tr-t">${t("trendStart")}</text><text x="${W - R}" y="${H - 6}" text-anchor="end" class="tr-t">${t("trendNow")}</text>
     </svg>
   </section>`;
+}
+
+// browser-voice fallback script (used only if the Polly voice cannot be fetched)
+function spokenFallback(c) {
+  if (!c) return "";
+  const iv = c.interval;
+  const bits = [c.name, t("say")[c.answer], t("advice")[c.answer]];
+  if (iv) bits.push(t("whyAirRange", bandName(iv.hi), iv.lo, iv.hi));
+  else if (c.value != null) bits.push(t("whyAir", bandName(c.value), c.value));
+  if (c.age_min != null) bits.push(c.state === "fresh" ? t("whyFresh", ageText(c.age_min)) : t("whyStale", ageText(c.age_min)));
+  return bits.join(". ").replace(/<[^>]+>/g, "").replace(/\u2013/g, " - ");
 }

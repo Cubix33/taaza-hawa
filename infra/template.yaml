@@ -144,6 +144,8 @@ Resources:
             - Effect: Allow
               Action: [bedrock:InvokeModel, bedrock:Converse]
               Resource: "*"
+        - Statement:
+            - { Effect: Allow, Action: polly:SynthesizeSpeech, Resource: "*" }
 
   PollFailAlarm:
     Type: AWS::CloudWatch::Alarm

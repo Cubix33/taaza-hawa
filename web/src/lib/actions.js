@@ -31,6 +31,7 @@ export async function run(...loaders) {
 }
 
 export function goStation(uid) {
+  stopSpeak();
   state.uid = uid; ls.set("uid", uid);
   state.card = null; state.pickerOpen = false; state.q = "";
   if (location.hash.startsWith("#/check")) { history.replaceState(null, "", `#/check?s=${uid}`); set({}); run(loadCard); }
@@ -67,3 +68,41 @@ export async function pollHold() {
     if (h.status !== state.hold.status) { state.hold = h; if (state.route === "check") await loadCard(); set({}); }
   } catch { /* keep waiting */ }
 }
+
+// ---------- spoken answer: Amazon Polly (Kajal) via the API, browser voice as a fallback ----------
+let player = null;
+
+export function stopSpeak() {
+  try { player?.pause(); } catch { /* already stopped */ }
+  player = null;
+  try { speechSynthesis.cancel(); } catch { /* not supported */ }
+  if (state.voice || state.voiceErr) set({ voice: "", voiceErr: false });
+}
+
+export async function toggleSpeak(fallbackText) {
+  if (state.voice) { stopSpeak(); return; }
+  // WebKit only allows play() that starts from a tap: touch the element now, give it audio after the fetch
+  const a = new Audio();
+  a.play().catch(() => {});
+  player = a;
+  set({ voice: "loading", voiceErr: false });
+  try {
+    const r = await api(`/speak?uid=${state.uid}&lang=${state.lang}`);
+    if (player !== a) return; // stopped while loading
+    a.src = `data:${r.mime};base64,${r.audio}`;
+    a.onended = () => { if (player === a) { player = null; set({ voice: "" }); } };
+    await a.play();
+    set({ voice: "playing" });
+  } catch {
+    if (player !== a) return;
+    player = null;
+    if (!("speechSynthesis" in window) || !fallbackText) { set({ voice: "", voiceErr: true }); return; }
+    const u = new SpeechSynthesisUtterance(fallbackText);
+    u.lang = state.lang === "hi" ? "hi-IN" : "en-IN";
+    u.onend = u.onerror = () => set({ voice: "" });
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+    set({ voice: "playing" });
+  }
+}
+
