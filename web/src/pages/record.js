@@ -43,6 +43,7 @@ export function view() {
       </div>
       ${b.poll ? `<p class="muted small rs-poll">${t("feedAge")}: ${since(b.poll.at)} ${t("ago")}</p>` : ""}
     </section>
+    ${accuracyView(b.accuracy)}
     ${b.participation ? `<p class="cpcb"><b>CPCB</b> ${esc(b.participation.line)}</p>` : ""}
     <div class="rec-cols">
       ${anyRow ? `<section class="panel grid">
@@ -61,4 +62,23 @@ export function view() {
       </section>
     </div>
   </div>`;
+}
+
+// "How often were we right?": real coverage against the 80% target, with n always shown
+const FEW = 5;
+function accuracyView(acc) {
+  if (!acc) return "";
+  const pct = (h, g) => Math.round((h / g) * 100);
+  const head = !acc.graded ? `<p class="muted">${t("accNone")}</p>` : `
+    <div class="acc-top"><b>${t("accTotal", acc.hits, acc.graded)}</b>${acc.graded < FEW ? `<span class="muted small">${t("accFew", acc.graded)}</span>` : ""}</div>
+    <div class="acc-bar"><i style="width:${pct(acc.hits, acc.graded)}%"></i><em style="left:80%"><span>${t("accTarget")}</span></em></div>`;
+  return `<section class="panel acc">
+    <h2 class="h2s">${t("accTitle")}</h2>
+    <p class="muted acc-lead">${t("accLead")}</p>
+    ${head}
+    ${acc.stations.length ? `<p class="acc-per">${t("accPer")}</p><ul class="acc-list">${acc.stations.map((s) => `<li class="${s.graded < FEW ? "few" : ""}">
+      <a href="#/check?s=${s.uid}">${esc(s.name)}</a>
+      <span class="acc-mini"><i style="width:${pct(s.hits, s.graded)}%"></i><em style="left:80%"></em></span>
+      <b>${s.graded < FEW ? "—" : `${pct(s.hits, s.graded)}%`}</b><small>${t("accN", s.graded)}</small></li>`).join("")}</ul>` : ""}
+  </section>`;
 }

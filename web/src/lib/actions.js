@@ -9,8 +9,9 @@ export async function loadStations() {
 }
 
 export async function loadCard() {
-  const [card] = await Promise.all([api(`/card?uid=${state.uid}`), loadStations()]);
+  const [card, hist] = await Promise.all([api(`/card?uid=${state.uid}`), api(`/history?uid=${state.uid}&hours=24`).catch(() => null), loadStations()]);
   state.card = card;
+  state.history = hist;
 }
 
 export async function loadBoard() {

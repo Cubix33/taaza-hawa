@@ -88,6 +88,34 @@ export const T = {
     said: "हमारा अंदाज़ा", read: "असली नंबर", newHold: "ठीक है",
     allNow: "सभी स्टेशन: आख़िरी नंबर कब आया", freshN: "ताज़ा",
 
+    // share, activity, trend, accuracy
+    share: "WhatsApp पर भेजें",
+    shareMsg: (say, name, air, age, url) => `ताज़ा हवा · ${name}
+${say}
+${air}
+आख़िरी असली नंबर ${age} पहले आया था।
+${url}`,
+    shareAir: (b, v) => `हवा: ${b} (AQI ${v})`, shareAirRange: (b, lo, h) => `हवा: शायद ${b} (AQI ${lo}–${h}, अंदाज़ा)`,
+    actQ: "आप बाहर क्या करेंगे?",
+    acts: [["walk", "आराम से टहलना"], ["jog", "तेज़ चलना / जॉगिंग"], ["run", "दौड़ना / खेल"], ["child", "बच्चा बाहर खेलेगा"]],
+    actSay: {
+      walk: "आराम से टहलते समय आप बैठने के मुकाबले लगभग <b>3 गुना</b> ज़्यादा हवा साँस में लेते हैं: 1 घंटा टहलना ≈ 3 घंटे बैठने जितनी हवा।",
+      jog: "तेज़ चलते या जॉगिंग करते समय आप बैठने के मुकाबले लगभग <b>6 गुना</b> ज़्यादा हवा साँस में लेते हैं: 1 घंटा ≈ 6 घंटे बैठने जितनी हवा।",
+      run: "दौड़ते या खेलते समय आप बैठने के मुकाबले लगभग <b>12 गुना</b> ज़्यादा हवा साँस में लेते हैं: 1 घंटा दौड़ना ≈ 12 घंटे बैठने जितनी हवा।",
+      child: "खेलते समय बच्चा बैठे रहने के मुकाबले लगभग <b>5 गुना</b> ज़्यादा हवा साँस में लेता है: 1 घंटा खेल ≈ 5 घंटे बैठने जितनी हवा।",
+    },
+    actNote: "हवा जितनी खराब, यह फ़र्क उतना ज़्यादा मायने रखता है। हमारी सलाह वही रहती है; यह सिर्फ़ समझाने के लिए है। स्रोत: US EPA (साँस की औसत दर)।",
+    trendTitle: "पिछले 24 घंटे",
+    trendNone: "पिछले 24 घंटे में इस स्टेशन से कोई नंबर नहीं आया।",
+    trendGap: (a) => `आख़िरी ${a}: कोई नया नंबर नहीं`,
+    trendStart: "24 घंटे पहले", trendNow: "अभी",
+    accTitle: "हम कितनी बार सही निकले?",
+    accLead: "हर जाँचा गया अंदाज़ा गिना जाता है: सुबह के अंदाज़े और 'हमें परखो' दोनों। हमारा लक्ष्य: 10 में से 8 बार असली नंबर दायरे के अंदर आए।",
+    accTotal: (h, g) => `${g} में से ${h} बार सही`, accTarget: "लक्ष्य: 80%",
+    accFew: (n) => `अभी सिर्फ़ ${n} जाँच हुई हैं, पक्का कहना जल्दी है`,
+    accNone: "अभी कोई अंदाज़ा जाँचा नहीं गया। पहले नतीजे कुछ घंटों में आएँगे।",
+    accPer: "हर स्टेशन पर", accN: (n) => `${n} जाँच`,
+
     // stations (3D map)
     stTitle: "दिल्ली का 3D हवा-नक्शा",
     stLead: "हर खंभा एक सरकारी हवा-स्टेशन है। रंग बताता है हवा कितनी खराब है। खंभा जितना ऊँचा, उतनी खराब हवा (या ऊपर बटन से बदलें: नंबर उतना पुराना)। किसी खंभे पर क्लिक करें।",
@@ -220,6 +248,33 @@ export const T = {
     hit: "We were right", missedBy: (n) => `Missed by ${n}`, missedWaiting: "No new number in 72 hours",
     said: "Our estimate", read: "Real number", newHold: "OK",
     allNow: "All stations: when the last number came", freshN: "fresh",
+
+    share: "Send on WhatsApp",
+    shareMsg: (say, name, air, age, url) => `Taaza Hawa · ${name}
+${say}
+${air}
+Last real number came ${age} ago.
+${url}`,
+    shareAir: (b, v) => `Air: ${b} (AQI ${v})`, shareAirRange: (b, lo, h) => `Air: probably ${b} (AQI ${lo}–${h}, estimate)`,
+    actQ: "What will you do outside?",
+    acts: [["walk", "Easy walk"], ["jog", "Brisk walk / jog"], ["run", "Run / sport"], ["child", "Child playing"]],
+    actSay: {
+      walk: "On an easy walk you breathe in about <b>3 times</b> as much air as sitting: 1 hour walking ≈ 3 hours sitting.",
+      jog: "Walking briskly or jogging, you breathe in about <b>6 times</b> as much air as sitting: 1 hour ≈ 6 hours sitting.",
+      run: "Running or playing sport, you breathe in about <b>12 times</b> as much air as sitting: 1 hour running ≈ 12 hours sitting.",
+      child: "A playing child breathes in about <b>5 times</b> as much air as sitting still: 1 hour of play ≈ 5 hours sitting.",
+    },
+    actNote: "The worse the air, the more this difference matters. Our advice stays the same; this is only to explain. Source: US EPA (average breathing rates).",
+    trendTitle: "Last 24 hours",
+    trendNone: "This station sent no number in the last 24 hours.",
+    trendGap: (a) => `Last ${a}: no new number`,
+    trendStart: "24 h ago", trendNow: "now",
+    accTitle: "How often were we right?",
+    accLead: "Every checked estimate counts: morning estimates and 'Hold me to it' alike. Our target: the real number lands inside the range 8 times in 10.",
+    accTotal: (h, g) => `Right ${h} of ${g} times`, accTarget: "Target: 80%",
+    accFew: (n) => `Only ${n} checks so far, too early to be sure`,
+    accNone: "No estimate has been checked yet. The first results arrive within a few hours.",
+    accPer: "By station", accN: (n) => `${n} checks`,
 
     stTitle: "Delhi's 3D air map",
     stLead: "Each column is a government air station. Colour shows how bad the air is. The taller the column, the worse the air (or switch above: the older the number). Click any column.",

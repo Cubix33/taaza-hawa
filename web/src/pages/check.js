@@ -1,6 +1,6 @@
 import { state, set, ls } from "../lib/store.js";
 import { t, hi } from "../lib/i18n.js";
-import { esc, ageText, isOld, icon, gauge, scale, bandName } from "../lib/ui.js";
+import { esc, ageText, isOld, icon, gauge, scale, bandName, bandColor } from "../lib/ui.js";
 import { run, loadCard, restoreHold, goStation, startHold, addEmail } from "../lib/actions.js";
 
 export function load() {
@@ -99,11 +99,15 @@ function card(c) {
         <h2 class="ans">${t("say")[c.answer]}</h2>
         <p class="advice">${t("advice")[c.answer] || ""}</p>
         ${whyList(c)}
+        ${c.answer !== "UNKNOWN" ? `<a class="btn wa" href="${shareLink(c)}" target="_blank" rel="noopener">${icon.wa}<span>${t("share")}</span></a>` : ""}
       </div>
       ${v != null ? `<div class="hero-gauge">${gauge(c)}</div>` : ""}
     </div>
     ${v != null ? scale(v) : ""}
   </section>
+
+  ${activityView()}
+  ${trendView(c)}
 
   <section class="facts ${iv ? "f4" : "f2"}">
     <div><dt>${t("age")}</dt><dd>${ageText(c.age_min)} ${t("ago")}</dd></div>
@@ -195,6 +199,10 @@ export function bind() {
     if (e.key === "ArrowDown") { e.preventDefault(); document.querySelector("#picklist [data-pick]")?.focus(); }
   });
   $("locate")?.addEventListener("click", locate);
+  document.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => {
+    const a = state.activity === b.dataset.act ? "" : b.dataset.act;
+    ls.set("activity", a); set({ activity: a });
+  }));
   $("holdbtn")?.addEventListener("click", startHold);
   $("addemail")?.addEventListener("click", addEmail);
   $("newhold")?.addEventListener("click", () => { ls.set("hold", ""); set({ hold: null }); });
@@ -210,4 +218,54 @@ function locate() {
     const best = [...state.stations].sort((a, b) => d(a) - d(b))[0];
     if (best) goStation(best.uid);
   });
+}
+
+// ---------- share on WhatsApp: the way Delhi families actually pass this on ----------
+export function shareLink(c) {
+  const iv = c.interval;
+  const air = iv ? t("shareAirRange", bandName(iv.hi), iv.lo, iv.hi) : c.value != null ? t("shareAir", bandName(c.value), c.value) : "";
+  const url = `${location.origin}${location.pathname}#/check?s=${c.uid}`;
+  const msg = t("shareMsg", t("say")[c.answer], c.name, air, ageText(c.age_min), url).replace(/<[^>]+>/g, "");
+  return `https://wa.me/?text=${encodeURIComponent(msg)}`;
+}
+
+// ---------- "what will you do outside?": explains, never changes the verdict ----------
+export function activityView() {
+  const a = state.activity;
+  return `<section class="panel act">
+    <p class="act-q">${t("actQ")}</p>
+    <div class="chips">${t("acts").map(([k, label]) => `<button class="chip-btn ${a === k ? "on" : ""}" data-act="${k}" aria-pressed="${a === k}">${label}</button>`).join("")}</div>
+    ${a ? `<p class="act-say">${t("actSay")[a]}</p><p class="act-note">${t("actNote")}</p>` : ""}
+  </section>`;
+}
+
+// ---------- last 24 hours: the line stops where the station went quiet ----------
+export function trendView(c) {
+  const h = state.history;
+  if (!h) return "";
+  const W = 640, H = 150, L = 36, R = 12, T = 12, B = 26;
+  const t0 = h.now - h.hours * 3600, x = (ts) => L + ((ts - t0) / (h.hours * 3600)) * (W - L - R);
+  const pts = h.points;
+  const top = Math.max(300, ...pts.map((p) => p.aqi + 20));
+  const y = (v) => T + (1 - v / top) * (H - T - B);
+  const bands = [[0, 100, "var(--b1)"], [100, 200, "var(--b2)"], [200, 300, "var(--b3)"], [300, top, "var(--b4)"]]
+    .map(([a, b, col]) => `<rect x="${L}" y="${y(b)}" width="${W - L - R}" height="${y(a) - y(b)}" fill="${col}" opacity=".08"/>`).join("");
+  const ticks = [100, 200, 300].map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="tr-grid"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" class="tr-t">${v}</text>`).join("");
+  // break the line wherever readings are more than 2 hours apart
+  let d = "", prev = null;
+  for (const p of pts) { d += `${!prev || p.ts - prev.ts > 2 * 3600 ? "M" : "L"}${x(p.ts).toFixed(1)} ${y(p.aqi).toFixed(1)} `; prev = p; }
+  const last = pts[pts.length - 1];
+  const gapFrom = last ? last.ts : t0;
+  const gapMin = Math.floor((h.now - gapFrom) / 60);
+  const gap = gapMin > 180 ? `<rect x="${x(gapFrom)}" y="${T}" width="${W - R - x(gapFrom)}" height="${H - T - B}" class="tr-gap"/>
+    <text x="${(x(gapFrom) + W - R) / 2}" y="${(T + H - B) / 2 + 4}" text-anchor="middle" class="tr-gap-t">${esc(last ? t("trendGap", ageText(gapMin)) : t("trendNone"))}</text>` : "";
+  const dots = pts.map((p) => `<circle cx="${x(p.ts).toFixed(1)}" cy="${y(p.aqi).toFixed(1)}" r="2.6" fill="${bandColor(p.aqi)}"><title>AQI ${p.aqi}</title></circle>`).join("");
+  return `<section class="panel trend">
+    <div class="tr-h"><b>${t("trendTitle")}</b><span class="muted small">AQI · ${esc(c.name)}</span></div>
+    <svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t("trendTitle"))}">
+      ${bands}${ticks}${gap}
+      <path d="${d}" class="tr-line"/>${dots}
+      <text x="${L}" y="${H - 6}" class="tr-t">${t("trendStart")}</text><text x="${W - R}" y="${H - 6}" text-anchor="end" class="tr-t">${t("trendNow")}</text>
+    </svg>
+  </section>`;
 }

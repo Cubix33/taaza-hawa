@@ -21,6 +21,8 @@ export const state = {
   q: "",
   filter: "all",
   sort: "name",
+  activity: ls.get("activity") || "",
+  history: null,
 };
 
 let _render = () => {};
