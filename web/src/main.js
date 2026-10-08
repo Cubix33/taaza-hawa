@@ -161,7 +161,7 @@ function render() {
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </div>
-    <button id="lang" class="lang" aria-label="language">${hi() ? "EN" : "हिं"}</button>
+    <button id="lang" class="lang" aria-label="${hi() ? "Switch to English" : "हिंदी में देखें"}">${hi() ? "English" : "हिंदी"}</button>
     </div></header>
     ${demo ? `<div class="wrap"><div class="demo">◆ ${t("demo")}</div></div>` : ""}
     <main class="wrap">${state.error ? errorView() : state.tab === "card" ? cardView() : boardView()}</main>

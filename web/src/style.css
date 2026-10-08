@@ -49,7 +49,7 @@ button { cursor: pointer; }
 .brand b { display: block; font: 600 1.15rem/1.1 var(--serif); letter-spacing: -.01em; color: var(--ink); }
 html[lang="hi"] .brand b { font-family: var(--deva); font-weight: 400; font-size: 1.3rem; }
 .brand small { display: block; font-size: .74rem; color: var(--muted); }
-.lang { min-width: 44px; height: 36px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); font-weight: 600; font-size: .85rem; }
+.lang { min-width: 44px; padding: 0 14px; height: 36px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); font-weight: 600; font-size: .85rem; }
 
 /* station picker */
 .picker { display: flex; gap: 8px; margin-bottom: 12px; }
