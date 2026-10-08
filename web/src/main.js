@@ -37,9 +37,9 @@ function layout() {
   ${demo ? `<div class="demo-bar">◆ ${t("demo")}</div>` : ""}
   <main id="main" class="route-${state.route}">${state.error && state.route !== "about" ? errorView() : page.view()}</main>
   <footer class="site-foot"><div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="#/">${icon.logo}<div><b>${t("brand")}</b><small>${t("tagline")}</small></div></a><p>${t("honest")}</p></div>
-    <nav class="foot-nav">${NAV.map(([r, k]) => `<a href="#/${r === "home" ? "" : r}">${t(k)}</a>`).join("")}</nav>
-    <p class="foot-src">CPCB · WAQI · CAMS (Open-Meteo) · AWS<br/><span>WeMakeDevs × AWS Environmental Hacks 2026</span></p>
+    <div class="foot-brand"><a class="brand" href="#/">${icon.logo}<div><b>${t("brand")}</b></div></a><p>${t("footLine")}</p></div>
+    <nav class="foot-nav" aria-label="footer">${NAV.map(([r, k]) => `<a href="#/${r === "home" ? "" : r}">${t(k)}</a>`).join("")}</nav>
+    <div class="foot-meta"><p>${t("footData")}</p><a href="https://github.com/Cubix33/taaza-hawa" target="_blank" rel="noopener">GitHub ↗</a></div>
   </div></footer>
   <nav class="tabbar" aria-label="main">${NAV.map(([r, k, ic]) => `<a href="#/${r === "home" ? "" : r}" class="${state.route === r ? "on" : ""}">${ic}<span>${t(k)}</span></a>`).join("")}</nav>`;
 }

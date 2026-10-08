@@ -6,6 +6,7 @@ import { run, loadCard, restoreHold, goStation, startHold, addEmail } from "../l
 export function load() {
   const s = Number(state.params.s);
   if (s) { state.uid = s; ls.set("uid", s); }
+  if (state.params.pick) state.pickerOpen = true;
   return run(loadCard, restoreHold);
 }
 
@@ -105,7 +106,7 @@ function card(c) {
   </section>
 
   <section class="facts ${iv ? "f4" : "f2"}">
-    <div><dt>${t("age")}</dt><dd>${ageText(c.age_min)}</dd></div>
+    <div><dt>${t("age")}</dt><dd>${ageText(c.age_min)} ${t("ago")}</dd></div>
     <div><dt>${t("source")}</dt><dd>${t("sourceVal")} <small>(WAQI)</small></dd></div>
     ${iv ? `<div><dt>${t("last")}</dt><dd>AQI ${c.last_value ?? "—"} <small>· ${ageText(c.age_min)} ${t("ago")}</small></dd></div>
             <div><dt>${t("basis")}</dt><dd class="small-dd">${iv.neighbours?.length ? esc(iv.neighbours.join(", ")) : t("onlyOld")}${iv.used_cams ? ` + ${t("model")}` : ""}
@@ -180,6 +181,7 @@ function holdView(c) {
     <h3>${t("holdQ")}</h3>
     <p class="hold-text">${t("holdText", esc(c.name), c.interval.lo, c.interval.hi)}</p>
     <button id="holdbtn" class="btn cta" ${state.busy ? "disabled" : ""}><span>${state.busy ? t("sending") : t("hold")}</span>${state.busy ? "" : icon.arrow}</button>
+    <p class="hold-sub">${t("holdSub")}</p>
     ${emailView(c, null)}
   </section>`;
 }

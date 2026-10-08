@@ -27,8 +27,9 @@ function answer() {
     <ul class="why">${whys.map((w) => `<li>${w}</li>`).join("")}</ul>
     <div class="actions">
       <a class="btn ink" href="#/check?s=${c.uid}">${t("details")} ${icon.arrow}</a>
-      <a class="btn line" href="#/stations">${t("change")}</a>
+      <a class="btn line" href="#/check?s=${c.uid}&pick=1">${t("change")}</a>
     </div>
+    <p class="what">${t("heroWhat")}</p>
   </div>`;
 }
 
@@ -44,12 +45,24 @@ export function view() {
     <p class="wrap sky-cap">${icon.clock}<span>${t("skyCap", city)}</span></p>
   </section>
 
-  <section class="wrap sec diff">
-    <h2 class="sec-title">${t("diffTitle")}</h2>
-    <ol class="steps3">${["how1", "how2", "how3"].map((key, i) => `<li><span class="num">0${i + 1}</span><h3>${t(key)[0]}</h3><p>${t(key)[1]}</p></li>`).join("")}</ol>
+  <section class="wrap sec use-sec">
+    <div>
+      <h2 class="sec-title">${t("useTitle")}</h2>
+      <ol class="use-list">${t("use").map(([h, p], i) => `<li><span class="num">${i + 1}</span><div><h3>${h}</h3><p>${p}</p></div></li>`).join("")}</ol>
+    </div>
+    <aside class="aqi-box">
+      <h3>${t("aqiWhat")[0]}</h3>
+      <p>${t("aqiWhat")[1]}</p>
+      <ol class="aqi-bands">${t("aqiBands").map(([r, n], i) => `<li><i style="background:${["var(--b1)", "var(--b2)", "var(--b3)", "var(--b4)"][i]}"></i><b>${r}</b><span>${n}</span></li>`).join("")}</ol>
+    </aside>
   </section>
 
-  <section class="band"><div class="wrap sec problem">
+  <section class="band"><div class="wrap sec diff">
+    <h2 class="sec-title">${t("diffTitle")}</h2>
+    <ol class="steps3">${["how1", "how2", "how3"].map((key, i) => `<li><span class="num">0${i + 1}</span><h3>${t(key)[0]}</h3><p>${t(key)[1]}</p></li>`).join("")}</ol>
+  </div></section>
+
+  <section><div class="wrap sec problem">
     <div class="problem-h"><h2 class="sec-title">${t("probTitle")}</h2><p class="lead">${t("probText")}</p></div>
     <div class="figures">${["prob1", "prob2", "prob3"].map((key) => `<div class="figure"><b>${t(key)[0]}</b><span>${t(key)[1]}</span></div>`).join("")}</div>
     <p class="src">${t("probSrc")}</p>

@@ -488,3 +488,59 @@ main.route-home + .site-foot { margin-top: 0; }
 @media (max-width: 760px) { .sky .sun { display: none; } }
 /* the mono face has no Devanagari and a wide space: Hindi labels use Mukta instead */
 html[lang="hi"] { --mono: "Mukta", system-ui, sans-serif; }
+
+/* ===== clarity additions ===== */
+.what { margin: 22px 0 0; padding: 12px 16px; max-width: 560px; border-left: 3px solid #1d1c19; background: rgba(255, 255, 255, .55); font-size: .98rem; line-height: 1.55; color: #2b2a25; border-radius: 0 10px 10px 0; }
+.use-sec { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 56px; align-items: start; }
+.use-list { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 22px; }
+.use-list li { display: grid; grid-template-columns: 44px 1fr; gap: 16px; align-items: start; }
+.use-list .num { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--ink); font: 500 1.1rem var(--serif); }
+.use-list h3 { margin: 6px 0 4px; font-size: 1.15rem; }
+.use-list p { margin: 0; color: var(--ink2); }
+.aqi-box { padding: 24px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.aqi-box h3 { margin: 0 0 6px; font: 500 1.35rem var(--serif); }
+html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
+.aqi-box p { margin: 0 0 16px; color: var(--ink2); }
+.aqi-bands { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.aqi-bands li { display: grid; grid-template-columns: 14px 80px 1fr; gap: 10px; align-items: center; }
+.aqi-bands i { width: 14px; height: 14px; border-radius: 4px; }
+.aqi-bands b { font: 500 .9rem var(--mono); }
+.hold-sub { margin: -4px 0 0; font-size: .86rem; color: var(--muted); text-align: center; }
+
+/* ===== footer: only what helps ===== */
+.site-foot { padding: 40px 0 36px; }
+.foot-in { grid-template-columns: minmax(0, 1.3fr) auto minmax(0, 1fr); gap: 48px; align-items: start; }
+.foot-brand p { margin: 12px 0 0; max-width: 36ch; font-size: .95rem; color: var(--ink2); }
+.foot-nav { grid-template-columns: repeat(2, auto); gap: 8px 28px; }
+.foot-meta p { margin: 0 0 10px; font-size: .88rem; color: var(--muted); max-width: 34ch; }
+.foot-meta a { font-weight: 600; font-size: .92rem; border-bottom: 1.5px solid var(--ink); }
+
+/* ===== 3D map ===== */
+.m3-tools { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.m3-frame { position: relative; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--sky-soft); }
+.map3d { height: min(72vh, 640px); min-height: 420px; }
+.map3d.flat { height: auto; min-height: 0; padding: 14px; }
+.m3-fail { margin: 8px 4px 0; font-size: .86rem; color: var(--muted); }
+.m3-legend { position: absolute; left: 12px; bottom: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--line); font-size: .82rem; color: var(--ink2); }
+.m3-legend > i { width: 18px; height: 10px; border-radius: 3px; }
+.m3-legend .grow { width: 70px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, #3fae6a, #b8641b); }
+.m3-legend em { font-style: normal; font: 500 .74rem var(--mono); }
+.m3-old { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
+.m3-old i { width: 14px; height: 14px; border-radius: 50%; border: 2px dashed var(--ochre); }
+.m3-hint { margin: 8px 2px 20px; font: 500 .78rem var(--mono); color: var(--muted); }
+.maplibregl-popup.m3pop .maplibregl-popup-content { display: grid; gap: 3px; padding: 12px 14px; border-radius: 12px; font-family: var(--sans); font-size: .9rem; color: #1d1c19; box-shadow: 0 14px 30px -14px rgba(0, 0, 0, .4); }
+.m3pop .ok { color: #2d7d4f; font-weight: 600; } .m3pop .old { color: #b8641b; font-weight: 600; }
+.m3pop button { margin-top: 6px; height: 34px; padding: 0 12px; border: 0; border-radius: 8px; background: #1d1c19; color: #fbf8f2; font-weight: 600; cursor: pointer; }
+.m3pop .maplibregl-popup-close-button { font-size: 18px; padding: 2px 8px; }
+.st-list { margin-top: 4px; }
+.st-rows { max-height: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+
+@media (max-width: 1080px) { .use-sec { grid-template-columns: 1fr; gap: 32px; } .foot-in { grid-template-columns: 1fr 1fr; } .foot-meta { grid-column: 1 / -1; } }
+@media (max-width: 760px) {
+  .what { font-size: .94rem; }
+  .map3d { height: 62vh; min-height: 360px; }
+  .st-rows { grid-template-columns: 1fr; }
+  .foot-in { grid-template-columns: 1fr; gap: 22px; }
+  .m3-legend { right: 12px; }
+}
+.m3-sep { margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--line); }
