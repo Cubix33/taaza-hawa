@@ -1,0 +1,11 @@
+.env
+*.env
+analysisofpast/
+.playwright-mcp/
+.qodo/
+node_modules/
+dist/
+__pycache__/
+.pytest_cache/
+.aws-sam/
+samconfig.toml
