@@ -1,0 +1,10 @@
+{
+  "name": "ताज़ा हवा · Taaza Hawa",
+  "short_name": "ताज़ा हवा",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f4ee",
+  "theme_color": "#0f3d3e",
+  "lang": "hi",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
