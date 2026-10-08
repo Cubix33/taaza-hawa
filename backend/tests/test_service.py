@@ -126,3 +126,25 @@ def test_station_list_carries_aqi_and_recent_holds_hide_email():
     service.create_hold(s, 1, NOW, email="a@b.co")
     rec = service.recent_holds(s)
     assert rec and rec[0]["name"] == "Dwarka Sector 8" and "email" not in rec[0]
+
+
+def test_history_returns_last_24h_oldest_first_with_worst_subindex():
+    s = MemoryStore()
+    seed(s)
+    pts = service.history(s, 2, NOW)
+    assert pts and pts == sorted(pts, key=lambda p: p["ts"])
+    assert all(NOW - p["ts"] <= 24 * H for p in pts)
+    assert service.history(s, 1, NOW) == []  # Dwarka last reported 31 h ago: nothing in the window
+
+
+def test_accuracy_counts_only_graded_promises():
+    s = MemoryStore()
+    cams = seed(s)
+    hit = service.create_hold(s, 1, NOW)
+    miss = service.create_hold(s, 4, NOW)
+    service.ingest(s, [rd(1, "Dwarka Sector 8", 28.5710, 77.0720, NOW + 900, round((hit["lo"] + hit["hi"]) / 2)),
+                       rd(4, "Punjabi Bagh", 28.6700, 77.1300, NOW + 900, 500)], cams, NOW + 1000)
+    service.create_hold(s, 1, NOW + 2000)  # still pending: not counted
+    acc = service.accuracy(s)
+    assert (acc["hits"], acc["graded"]) == (1, 2) and acc["target"] == 0.8
+    assert {r["uid"]: (r["hits"], r["graded"]) for r in acc["stations"]} == {1: (1, 1), 4: (0, 1)}

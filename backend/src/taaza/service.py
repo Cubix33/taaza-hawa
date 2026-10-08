@@ -328,3 +328,28 @@ def recent_holds(store: Store, limit: int = 20) -> list[dict]:
     items.sort(key=lambda i: i["created_ts"], reverse=True)
     keep = ("name", "uid", "pollutant", "created_ts", "lo", "hi", "status", "actual", "miss_by")
     return [{k: i.get(k) for k in keep} for i in items[:limit]]
+
+
+def history(store: Store, uid: int, now_ts: int, hours: int = 24) -> list[dict]:
+    """Last `hours` of readings for one station as [{ts, aqi}], oldest first. AQI = worst sub-index."""
+    since = now_ts - hours * 3600
+    rows = store.query(f"READ#{uid}", limit=hours * 6, reverse=True)
+    out = [{"ts": r["ts"], "aqi": round(max(r["values"].values()))} for r in rows if r["ts"] >= since and r["values"]]
+    return sorted(out, key=lambda r: r["ts"])
+
+
+def accuracy(store: Store) -> dict:
+    """How often the graded promises (morning estimates and holds) landed inside the range.
+    Pending promises are not counted; 'Missed, still waiting' counts as a miss."""
+    per, hits, graded = [], 0, 0
+    for uid, meta in list_stations(store).items():
+        h = g = 0
+        for item in store.query(f"PRED#{uid}"):
+            if item.get("status") in (grader.HIT, grader.MISSED, grader.MISSED_WAITING):
+                g += 1
+                h += item["status"] == grader.HIT
+        if g:
+            per.append({"uid": uid, "name": meta["name"], "hits": h, "graded": g})
+        hits, graded = hits + h, graded + g
+    per.sort(key=lambda r: (-r["graded"], r["name"]))
+    return {"hits": hits, "graded": graded, "target": 0.8, "stations": per}

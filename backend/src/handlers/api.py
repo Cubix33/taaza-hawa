@@ -47,7 +47,11 @@ def route(method, path, q, body, s, t, start_execution=None):
         return 200, card
     if path == "/scoreboard" and method == "GET":
         return 200, {**service.scoreboard(s, _recent_dates(t)), "now": t,
-                     "recent_holds": service.recent_holds(s)}
+                     "recent_holds": service.recent_holds(s), "accuracy": service.accuracy(s)}
+    if path == "/history" and method == "GET":
+        uid = int(q.get("uid") or DEFAULT_UID)
+        hours = max(1, min(72, int(q.get("hours") or 24)))
+        return 200, {"uid": uid, "hours": hours, "now": t, "points": service.history(s, uid, t, hours)}
     if path == "/hold" and method == "POST":
         card = service.build_card(s, int(body["uid"]), t)
         if not card or not card.get("can_hold"):

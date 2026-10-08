@@ -40,4 +40,6 @@ def seed(now_ts: int, hours: int = 72, seed_: int = 11) -> MemoryStore:
             v = max(20.0, city + bias + rng.gauss(0, 12))
             rows.append(StationReading(uid, name, lat, lon, t - 600, {"pm10": round(v), "pm25": round(v * 0.7)}))
         service.ingest(s, rows, cams, t)
+        if service.datetime.fromtimestamp(t, service.IST).hour == 6:
+            service.morning_predictions(s, t)
     return s
