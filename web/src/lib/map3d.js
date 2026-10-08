@@ -44,6 +44,9 @@ export async function mount3d(el, getData, { popupHtml, onOpen }) {
     maxPitch: 75, antialias: true, attributionControl: { compact: true }, cooperativeGestures: false,
   });
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+  // The page can re-render (and swap the container node) while this library is still loading, so the
+  // map may be created in a detached, zero-size box and draw at its 400x300 default. Resize whenever the box changes.
+  new ResizeObserver(() => map.resize()).observe(el);
   await new Promise((res, rej) => { map.once("load", res); map.once("error", (e) => rej(e.error || e)); });
 
   const d = getData();
