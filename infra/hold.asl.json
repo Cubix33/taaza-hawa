@@ -1,0 +1,32 @@
+{
+  "Comment": "A receipt is a waiting execution: parks on waitForTaskToken until the station's next reading grades it.",
+  "StartAt": "ParkUntilStationSpeaks",
+  "States": {
+    "ParkUntilStationSpeaks": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${RegisterFnArn}",
+        "Payload": { "holdId.$": "$.holdId", "token.$": "$$.Task.Token" }
+      },
+      "TimeoutSeconds": 259500,
+      "ResultPath": "$.grade",
+      "Catch": [{ "ErrorEquals": ["States.Timeout"], "ResultPath": "$.timeout", "Next": "ExpireHold" }],
+      "Next": "Notify"
+    },
+    "ExpireHold": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": { "FunctionName": "${ExpireFnArn}", "Payload.$": "$" },
+      "ResultSelector": { "grade.$": "$.Payload" },
+      "ResultPath": "$",
+      "Next": "Notify"
+    },
+    "Notify": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": { "FunctionName": "${NotifyFnArn}", "Payload.$": "$" },
+      "End": true
+    }
+  }
+}

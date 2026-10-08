@@ -1,0 +1,165 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Taaza Hawa - station-air freshness, calibrated intervals and a self-grading ledger.
+
+# Deploy:  sam build -t infra/template.yaml && sam deploy --guided --region ap-south-1
+# (run from the repo root; CodeUri paths below are relative to this file)
+
+Parameters:
+  WaqiToken:
+    Type: String
+    NoEcho: true
+  SesSender:
+    Type: String
+    Default: ""
+    Description: Verified SES sender address; empty disables receipt emails.
+  BedrockModelId:
+    Type: String
+    Default: ""
+    Description: e.g. in.anthropic.claude-haiku-4-5-20251001-v1:0 ; empty disables the Hindi rephrase.
+  DefaultStationUid:
+    Type: String
+    Default: "0"
+    Description: WAQI uid of the default station (Dwarka Sector 8).
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]
+    CodeUri: ../backend/src/
+    MemorySize: 256
+    Timeout: 30
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref Table
+
+Resources:
+  Table:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: pk, AttributeType: S }
+        - { AttributeName: sk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pk, KeyType: HASH }
+        - { AttributeName: sk, KeyType: RANGE }
+
+  # ---- the grading ledger's state machine -------------------------------------------------
+  HoldStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Type: STANDARD
+      DefinitionUri: hold.asl.json
+      DefinitionSubstitutions:
+        RegisterFnArn: !GetAtt HoldRegisterFn.Arn
+        ExpireFnArn: !GetAtt HoldExpireFn.Arn
+        NotifyFnArn: !GetAtt HoldNotifyFn.Arn
+      Policies:
+        - LambdaInvokePolicy: { FunctionName: !Ref HoldRegisterFn }
+        - LambdaInvokePolicy: { FunctionName: !Ref HoldExpireFn }
+        - LambdaInvokePolicy: { FunctionName: !Ref HoldNotifyFn }
+
+  HoldRegisterFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers.hold_tasks.register
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref Table }
+        - Statement:
+            - { Effect: Allow, Action: states:SendTaskSuccess, Resource: "*" }
+
+  HoldExpireFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers.hold_tasks.expire
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref Table }
+
+  HoldNotifyFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers.hold_tasks.notify
+      Environment:
+        Variables:
+          SES_SENDER: !Ref SesSender
+      Policies:
+        - Statement:
+            - { Effect: Allow, Action: ses:SendEmail, Resource: "*" }
+
+  # ---- polling, morning promises, bulletin quote ------------------------------------------
+  PollerFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers.poller.handler
+      Timeout: 120
+      Environment:
+        Variables:
+          WAQI_TOKEN: !Ref WaqiToken
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref Table }
+        - Statement:
+            - { Effect: Allow, Action: states:SendTaskSuccess, Resource: "*" }
+      Events:
+        Poll:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(15 minutes)
+            Input: '{"task":"poll"}'
+        Morning:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(30 6 * * ? *)
+            ScheduleExpressionTimezone: Asia/Kolkata
+            Input: '{"task":"morning"}'
+        Bulletin:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(30 17 * * ? *)
+            ScheduleExpressionTimezone: Asia/Kolkata
+            Input: '{"task":"bulletin"}'
+
+  # ---- public API (Lambda Function URL, no API Gateway needed) ----------------------------
+  ApiFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers.api.handler
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref HoldStateMachine
+          DEFAULT_STATION_UID: !Ref DefaultStationUid
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+          BEDROCK_REGION: !Ref AWS::Region
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins: ["*"]
+          AllowMethods: [GET, POST]
+          AllowHeaders: [content-type]
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref Table }
+        - StepFunctionsExecutionPolicy: { StateMachineName: !GetAtt HoldStateMachine.Name }
+        - Statement:
+            - Effect: Allow
+              Action: [bedrock:InvokeModel, bedrock:Converse]
+              Resource: "*"
+
+  PollFailAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Poller failing - the app will say how old its feed is.
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions: [{ Name: FunctionName, Value: !Ref PollerFn }]
+      Statistic: Sum
+      Period: 900
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+Outputs:
+  ApiUrl:
+    Value: !GetAtt ApiFnUrl.FunctionUrl
+  StateMachineArn:
+    Value: !Ref HoldStateMachine
