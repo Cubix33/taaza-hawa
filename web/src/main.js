@@ -3,7 +3,6 @@ import { state, set, onRender, ls } from "./lib/store.js";
 import { t, hi } from "./lib/i18n.js";
 import { esc, icon } from "./lib/ui.js";
 import { pollHold, run, loadCard } from "./lib/actions.js";
-import { stopSky } from "./lib/sky.js";
 import * as home from "./pages/home.js";
 import * as check from "./pages/check.js";
 import * as stations from "./pages/stations.js";
@@ -29,9 +28,8 @@ function parseHash() {
 function layout() {
   const page = PAGES[state.route];
   const demo = state.demo || state.card?.demo || state.board?.demo;
-  const dark = state.route === "home";
   return `
-  <header class="topbar ${dark ? "on-hero" : ""}"><div class="wrap topbar-in">
+  <header class="topbar"><div class="wrap topbar-in">
     <a class="brand" href="#/">${icon.logo}<div><b>${t("brand")}</b><small>${t("tagline")}</small></div></a>
     <nav class="mainnav" aria-label="main">${NAV.map(([r, k]) => `<a href="#/${r === "home" ? "" : r}" class="${state.route === r ? "on" : ""}" ${state.route === r ? 'aria-current="page"' : ""}>${t(k)}</a>`).join("")}</nav>
     <button id="lang" class="lang" aria-label="${hi() ? "Switch to English" : "हिंदी में देखें"}">${hi() ? "English" : "हिंदी"}</button>
@@ -52,7 +50,6 @@ function errorView() {
 }
 
 function render() {
-  if (state.route !== "home") stopSky();
   document.getElementById("app").innerHTML = layout();
   document.getElementById("lang")?.addEventListener("click", () => {
     state.lang = hi() ? "en" : "hi"; ls.set("lang", state.lang); document.documentElement.lang = state.lang; render();

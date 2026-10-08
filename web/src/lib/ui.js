@@ -131,3 +131,30 @@ export function stationMap(stations, { current, compact = false } = {}) {
     ${dots}
   </svg>`;
 }
+
+// "How old is every reading": one bar per station, height on a log scale of age, a 3-hour line.
+// The product's whole idea in one picture.
+export function ageChart(stations) {
+  const pts = stations.filter((s) => s.age_min != null).sort((a, b) => b.age_min - a.age_min);
+  if (!pts.length) return "";
+  const n = pts.length, bw = Math.max(18, Math.min(44, 980 / n)), gap = Math.round(bw * 0.28);
+  const W = n * (bw + gap) + 70, H = 260, base = 214, top = 26;
+  const maxMin = Math.max(72 * 60, pts[0].age_min);
+  const y = (m) => base - (base - top) * (Math.log1p(m) / Math.log1p(maxMin));
+  const ticks = [[10, "10m"], [60, "1h"], [180, t("threeH")], [24 * 60, "24h"], [72 * 60, "72h"]];
+  const bars = pts.map((s, i) => {
+    const x = 56 + i * (bw + gap), yy = y(s.age_min), old = isOld(s);
+    const tip = `${s.name} · ${ageText(s.age_min)}${s.aqi != null ? ` · AQI ${s.aqi}` : ""}`;
+    return `<a href="#/check?s=${s.uid}" class="ab ${old ? "old" : ""}" aria-label="${esc(tip)}"><title>${esc(tip)}</title>
+      <rect x="${x}" y="${yy}" width="${bw}" height="${base - yy}" rx="${Math.min(6, bw / 3)}"/>
+      ${old && i < 3 ? `<text x="${x + bw / 2}" y="${yy - 8}" text-anchor="middle" class="ab-l">${esc(ageText(s.age_min))}</text>` : ""}
+    </a>`;
+  }).join("");
+  const oldest = pts.filter(isOld).slice(0, 3).map((s) => `<a href="#/check?s=${s.uid}"><b>${esc(s.name)}</b> ${ageText(s.age_min)}</a>`).join("");
+  return `<div class="ac-scroll"><svg class="agechart" viewBox="0 0 ${W} ${H}" style="min-width:${Math.min(W, 640)}px" role="img" aria-label="${esc(t("ageTitle"))}">
+    ${ticks.map(([m, l]) => `<g class="ac-tick ${m === 180 ? "line3" : ""}"><line x1="48" x2="${W}" y1="${y(m)}" y2="${y(m)}"/><text x="42" y="${y(m) + 4}" text-anchor="end">${l}</text></g>`).join("")}
+    ${bars}
+    <line x1="48" x2="${W}" y1="${base}" y2="${base}" class="ac-base"/>
+  </svg></div>
+  ${oldest ? `<p class="ac-oldest"><span>${hi() ? "सबसे पुरानी:" : "Oldest:"}</span>${oldest}</p>` : ""}`;
+}

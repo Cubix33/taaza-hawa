@@ -73,8 +73,17 @@ function reason(c) {
               : `${n}'s latest reading is <b>${age} old</b>, so we estimated from ${basisEn}: the AQI is probably between <b>${iv.lo} and ${iv.hi}</b>.`;
 }
 
+// the reasons in plain words: how bad the air is, and how old the number behind it is
+function whyList(c) {
+  const iv = c.interval, items = [];
+  if (iv) items.push(t("whyAirRange", bandName(iv.hi), iv.lo, iv.hi));
+  else if (c.value != null) items.push(t("whyAir", bandName(c.value), c.value));
+  if (c.age_min != null) items.push(c.state === "fresh" ? t("whyFresh", ageText(c.age_min)) : t("whyStale", ageText(c.age_min)));
+  if (!items.length) return `<p class="sent">${reason(c)}</p>`;
+  return `<div class="why-box"><p class="why-t">${t("why")}</p><ul class="why">${items.map((x) => `<li>${x}</li>`).join("")}</ul></div>`;
+}
+
 function card(c) {
-  const answer = hi() ? c.answer_hi : c.answer_en;
   const stale = c.state !== "fresh";
   const iv = c.interval;
   const v = iv ? iv.hi : c.value;
@@ -86,9 +95,9 @@ function card(c) {
           <p class="q">${esc(c.name)}</p>
           ${c.age_min != null ? `<span class="pill ${stale ? "pill-stale" : "pill-fresh"}"><i></i>${stale ? t("stale") : t("fresh")} · ${ageText(c.age_min)}</span>` : ""}
         </div>
-        <h2 class="ans">${esc(answer)}</h2>
+        <h2 class="ans">${t("say")[c.answer]}</h2>
         <p class="advice">${t("advice")[c.answer] || ""}</p>
-        <p class="sent">${reason(c)}</p>
+        ${whyList(c)}
       </div>
       ${v != null ? `<div class="hero-gauge">${gauge(c)}</div>` : ""}
     </div>
