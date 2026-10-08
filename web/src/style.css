@@ -6,7 +6,7 @@
    The hero sky is drawn from live AQI, so the one big visual is real data.
    ========================================================================== */
 :root {
-  --bg: #fbf8f2; --bg2: #f2ede3; --surface: #ffffff; --ink: #1d1c19; --ink2: #3b3832; --muted: #625e55; --line: #e6dfd2;
+  --bg: #fbf8f2; --bg2: #f2ede3; --surface: #ffffff; --ink: #1d1c19; --ink2: #4a473f; --muted: #7b776d; --line: #e6dfd2;
   --brand: #2f6da8; --brand-ink: #ffffff; --sky-soft: #e8f1f8; --sky-ink: #34475b;
   --ochre: #b8641b; --ochre-soft: #fbeedc;
   --go: #2d7d4f; --go-bg: #e5f3e9; --wait: #a9600f; --wait-bg: #fbeeda; --stay: #b03a2a; --stay-bg: #f9e4df; --unk-bg: #efebe3;
@@ -22,7 +22,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #141412; --bg2: #1b1a17; --surface: #201f1b; --ink: #efece5; --ink2: #d8d3c7; --muted: #aaa598; --line: #302e28;
+    --bg: #141412; --bg2: #1b1a17; --surface: #201f1b; --ink: #efece5; --ink2: #cbc6ba; --muted: #969185; --line: #302e28;
     --brand: #84b6e4; --brand-ink: #10161c; --sky-soft: #1a2530;
     --ochre: #e39a52; --ochre-soft: #2b2115;
     --go: #74cf98; --go-bg: #15281c; --wait: #eeb25e; --wait-bg: #2b2214; --stay: #ff8f7b; --stay-bg: #2f1a16; --unk-bg: #23221e;
@@ -34,7 +34,7 @@
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
-body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font: 18px/1.65 var(--sans); -webkit-font-smoothing: antialiased; }
+body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font: 17px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: none; }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -544,21 +544,3 @@ html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
   .m3-legend { right: 12px; }
 }
 .m3-sep { margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--line); }
-
-/* ===== readability pass: bigger small text, calmer line length, more air for Devanagari ===== */
-html[lang="hi"] body { line-height: 1.75; }
-.small, .src, .sky-cap, .m3-hint, .pop-foot, .legend, .scale-t, .ac-oldest span, .hold-sub, .email-l, .foot-meta p, .rs-ring { font-size: .92rem; }
-.eyebrow, .why-t, .g-head, .st small, .opt small, .sel-age, .pill, .stamp, .aqi-chip, .st-age, .rc-said, .scale li small { font-size: .86rem; }
-dt { font-size: .9rem; } dd small { font-size: .88rem; }
-.lead, .page-lead { font-size: 1.18rem; line-height: 1.65; max-width: 56ch; }
-.why li { font-size: 1.14rem; line-height: 1.6; }
-.sheet .why li { font-weight: 500; }
-.advice { font-size: 1.16rem; }
-.what { font-size: 1.04rem; }
-.steps3 p, .use-list p, .how-card p, .figure span, .faq p, .hold-text, .fresh-note p, .est-list, .src-list, .svc p { font-size: 1.04rem; line-height: 1.65; }
-.faq summary { font-size: 1.12rem; }
-.st span, .opt span, .st-nm b, .g-name { font-size: 1rem; }
-.ticket, .recent li b { font-size: 1rem; }
-.tabbar a { font-size: .72rem; }
-@media (max-width: 760px) { body { font-size: 17.5px; } .why li { font-size: 1.06rem; } .lead, .page-lead { font-size: 1.08rem; } }
-.sheet .why, .what { max-width: 520px; }
