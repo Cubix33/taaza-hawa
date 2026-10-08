@@ -23,6 +23,7 @@ def handler(event, _ctx):
             print("CAMS fetch failed:", repr(e))
             cams = {}
         res = service.ingest(s, readings, cams, t, on_hold_graded=send_hold_result)
+        res["morning_catch_up"] = service.ensure_morning(s, t)
         print("poll", res)
         return res
     if task == "morning":

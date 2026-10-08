@@ -302,6 +302,29 @@ def station_list(store: Store, now_ts: int) -> list[dict]:
     out = []
     for uid, m in list_stations(store).items():
         r = latest_reading(store, uid)
+        aqi = round(max(r["values"].values())) if r and r["values"] else None
         out.append({"uid": uid, "name": m["name"], "lat": m["lat"], "lon": m["lon"],
-                    "age_min": age_minutes(now_ts, r["ts"]) if r else None})
+                    "age_min": age_minutes(now_ts, r["ts"]) if r else None, "aqi": aqi})
     return sorted(out, key=lambda s: s["name"])
+
+
+MORNING_AT = (6, 30)  # IST
+
+
+def ensure_morning(store: Store, now_ts: int) -> int:
+    """Catch-up for the 06:30 job: a stack deployed (or a run missed) after 06:30 still gets
+    today's promises on the next poll. Idempotent: existing promises are left alone."""
+    t = datetime.fromtimestamp(now_ts, IST)
+    if (t.hour, t.minute) < MORNING_AT:
+        return 0
+    return morning_predictions(store, now_ts)
+
+
+def recent_holds(store: Store, limit: int = 20) -> list[dict]:
+    """Latest "Hold me to it" promises across all stations, for the public record (no emails)."""
+    items = []
+    for uid in list_stations(store):
+        items.extend(store.query(f"PRED#{uid}", prefix="HOLD#"))
+    items.sort(key=lambda i: i["created_ts"], reverse=True)
+    keep = ("name", "uid", "pollutant", "created_ts", "lo", "hi", "status", "actual", "miss_by")
+    return [{k: i.get(k) for k in keep} for i in items[:limit]]

@@ -46,7 +46,8 @@ def route(method, path, q, body, s, t, start_execution=None):
         card["email_enabled"] = email_enabled()
         return 200, card
     if path == "/scoreboard" and method == "GET":
-        return 200, {**service.scoreboard(s, _recent_dates(t)), "now": t}
+        return 200, {**service.scoreboard(s, _recent_dates(t)), "now": t,
+                     "recent_holds": service.recent_holds(s)}
     if path == "/hold" and method == "POST":
         card = service.build_card(s, int(body["uid"]), t)
         if not card or not card.get("can_hold"):

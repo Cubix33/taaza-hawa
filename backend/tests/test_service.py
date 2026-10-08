@@ -104,3 +104,25 @@ def test_calibration_warms_up_from_live_leave_one_out():
                        cams, t)
     cal = service.list_stations(s)[1]["cal"]["pm10"]
     assert len(cal["residuals"]) >= 20
+
+
+def test_morning_catch_up_only_after_0630_ist_and_idempotent():
+    s = MemoryStore()
+    seed(s)
+    from datetime import datetime
+    base = datetime(2026, 10, 8, tzinfo=service.IST)
+    early = int(base.replace(hour=6, minute=0).timestamp())
+    late = int(base.replace(hour=14, minute=10).timestamp())
+    assert service.ensure_morning(s, early) == 0
+    assert service.ensure_morning(s, late) > 0
+    assert service.ensure_morning(s, late + 900) == 0
+
+
+def test_station_list_carries_aqi_and_recent_holds_hide_email():
+    s = MemoryStore()
+    seed(s)
+    st = {x["uid"]: x for x in service.station_list(s, NOW)}
+    assert st[2]["aqi"] == 230
+    service.create_hold(s, 1, NOW, email="a@b.co")
+    rec = service.recent_holds(s)
+    assert rec and rec[0]["name"] == "Dwarka Sector 8" and "email" not in rec[0]
