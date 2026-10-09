@@ -50,6 +50,14 @@ function whyList(c) {
   return `<div class="why-box"><p class="why-t">${t("why")}</p><ul class="why">${items.map((x) => `<li>${x}</li>`).join("")}</ul></div>`;
 }
 
+function waitPointer(c) {
+  const stale = c.state !== "fresh";
+  const bits = [t("waitNext", stale)];
+  if (stale && c.can_hold && c.interval && state.hold?.uid !== c.uid) bits.push(t("waitHold"));
+  if (state.history?.points?.length) bits.push(t("waitTrend"));
+  return bits.join(" ");
+}
+
 function card(c) {
   const stale = c.state !== "fresh";
   const iv = c.interval;
@@ -64,7 +72,9 @@ function card(c) {
         </div>
         <h2 class="ans">${t("say")[c.answer]}</h2>
         <p class="advice">${t("advice")[c.answer] || ""}</p>
+        ${c.answer === "WAIT" ? `<p class="wait-next">${waitPointer(c)}</p>` : ""}
         ${whyList(c)}
+        ${c.answer !== "UNKNOWN" ? `<p class="healthy-note">${t("healthyNote")}</p>` : ""}
         ${c.answer !== "UNKNOWN" ? `<div class="card-actions">
           <button id="speak" class="btn speak ${state.voice ? "on" : ""}" aria-pressed="${!!state.voice}">${state.voice ? icon.stop : icon.speaker}<span>${state.voice === "loading" ? t("listenLoad") : state.voice ? t("listenStop") : t("listen")}</span></button>
           <a class="btn wa" href="${shareLink(c)}" target="_blank" rel="noopener">${icon.wa}<span>${t("share")}</span></a>
@@ -229,8 +239,10 @@ function spokenFallback(c) {
   if (!c) return "";
   const iv = c.interval;
   const bits = [c.name, t("say")[c.answer], t("advice")[c.answer]];
+  if (c.answer === "WAIT") bits.push(t("waitNext", c.state !== "fresh"));
   if (iv) bits.push(t("whyAirRange", bandName(iv.hi), iv.lo, iv.hi));
   else if (c.value != null) bits.push(t("whyAir", bandName(c.value), c.value));
   if (c.age_min != null) bits.push(c.state === "fresh" ? t("whyFresh", ageText(c.age_min)) : t("whyStale", ageText(c.age_min)));
+  if (c.answer !== "UNKNOWN") bits.push(t("healthyNote"));
   return bits.join(". ").replace(/<[^>]+>/g, "").replace(/\u2013/g, " - ");
 }

@@ -26,6 +26,8 @@ function answer() {
     <h1 class="say">${t("say")[c.answer]}</h1>
     <p class="where">${icon.pin}<b>${esc(c.name)}</b><span class="stamp ${stale ? "old" : "ok"}">${ageText(c.age_min)} ${hi() ? "पुरानी" : "old"}</span></p>
     <ul class="why">${whys.map((w) => `<li>${w}</li>`).join("")}</ul>
+    ${c.answer === "WAIT" ? `<p class="wait-next">${t("waitNext", stale)}</p>` : ""}
+    ${c.answer !== "UNKNOWN" ? `<p class="healthy-note">${t("healthyNote")}</p>` : ""}
     <div class="actions">
       <a class="btn ink" href="#/check?s=${c.uid}">${t("details")} ${icon.arrow}</a>
       <a class="btn line" href="#/check?s=${c.uid}&pick=1">${t("change")}</a>

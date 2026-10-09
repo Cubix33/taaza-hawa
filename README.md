@@ -34,7 +34,7 @@ WeMakeDevs × AWS **Environmental Hacks 2026**
 
 ## The problem
 
-Every October morning a Delhi resident checks one number before a run, a walk, or sending a child to practice. That number has **no age, no source and no error bar**.
+Every October morning a Delhi resident checks one number before a run, a walk or a ride. That number has **no age, no source and no error bar**.
 
 It is often old. On 4 Oct 2026 the mirror most people use showed Anand Vihar **31 hours** stale and NSIT Dwarka **56 hours** stale ([R2](docs/wayfinder/research/R2-data-feeds-audit.md)). CPCB's own bulletin shows 2–3 of 46 Delhi stations not reporting on an ordinary day ([R1](docs/wayfinder/research/R1-delhi-ground-truth-oct-2026.md)). Last season's loudest complaint on r/delhi was not *"what is the AQI?"* but *"can I trust it?"* ([R7](docs/wayfinder/research/R7-citizen-friction-mining.md)).
 
@@ -49,7 +49,7 @@ The same call is made every school morning, before assembly, for a whole playgro
 | **One plain answer** | **हाँ, जाइए** · **अभी नहीं, हवा सुधरने का इंतज़ार करें** · **नहीं, आज अंदर रहिए**, from a fixed, published rule on the CPCB AQI bands, followed by a short *"क्यों? / Why?"* in everyday words. |
 | **The age of every number** | Each answer says how many hours ago the station measured it, and where it came from. Always. |
 | **An honest range when it's old** | If a station's number is over 3 h old, the app shows *"AQI probably 232–264"*: a split-conformal interval built from the 3 nearest live stations plus bias-corrected CAMS. Advice uses the top of the range, to be careful. |
-| **Check it and tell me** | One tap, no account. An **AWS Step Functions** execution waits (at no compute cost) until that station reports again, then the page shows whether the real number landed inside our range. |
+| **Hold me to this** | One tap, no account. An **AWS Step Functions** execution waits (at no compute cost) until that station reports again, then the page shows whether the real number landed inside our range. |
 | **A public track record** | Every morning, every station: right or missed by N. Misses are shown as clearly as hits, with the hit rate against an 80 % target and the number of checks always visible. |
 | **Listen** | A Hindi/English voice (Amazon Polly, *Kajal*) reads the answer aloud, for people who don't read easily. |
 | **Air Lens** | Explore Delhi in a dusk/day 3D map, fly into real building geometry, select floating station readings, and see the actual inputs behind an estimate. Includes location pins, pollutant switching, search, a flat view, and a keyboard-accessible station list. |
@@ -149,7 +149,7 @@ flowchart LR
   P --> D[(DynamoDB<br/>readings · calibration<br/>promises · task tokens)]
   W[Web app<br/>Amplify Hosting] -->|Function URL| A[Lambda: API]
   A --> D
-  A -->|check it and tell me| SF[Step Functions<br/>waitForTaskToken]
+  A -->|hold me to this| SF[Step Functions<br/>waitForTaskToken]
   SF --> R[Lambda: register token] --> D
   P -->|station reports again<br/>SendTaskSuccess| SF
   SF --> N[Lambda: notify] --> E[SES emails<br/>check results · school plans]
@@ -279,7 +279,7 @@ Built during the hack window (8–11 Oct 2026). Open work is tracked as [issues]
 - [x] Deployed to AWS and hosted on Amplify
 - [ ] Live WAQI scale check (K3) and the real Dwarka default station
 - [ ] CPCB bulletin parser checked on a real PDF
-- [ ] End-to-end "check it and tell me" loop recorded on AWS
+- [ ] End-to-end "Hold me to this" loop recorded on AWS
 - [ ] Demo film and AWS Builder Center blog
 
 ## Research behind it

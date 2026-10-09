@@ -1,4 +1,4 @@
-"""Step Functions task handlers for the 'Check it and tell me' execution.
+"""Step Functions task handlers for the 'Hold me to this' execution.
 
   register : receives the task token, parks it in DynamoDB (the poller closes it later)
   expire   : 72 h with no judging reading -> "Missed, still waiting"
