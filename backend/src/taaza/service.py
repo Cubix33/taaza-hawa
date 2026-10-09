@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Callable
 
 from . import grader, texts
-from .aqi import LABEL, POLLUTANTS, answer_for, band_names
+from .aqi import LABEL, POLLUTANTS, answer_for, band_names, cpcb_from_us
 from .estimate import Estimate, Neighbour, estimate, neighbour_mean
 from .freshness import age_minutes, is_stale
 from .sources.waqi import StationReading
@@ -14,6 +14,8 @@ from .store import Store
 
 IST = timezone(timedelta(hours=5, minutes=30))
 CAL_MAX = 200
+DATA_V = 2  # readings at real UTC on the CPCB scale; items without it predate the 9 Oct 2026 fix
+LEGACY_SHIFT_S = 5 * 3600 + 1800  # those items stored WAQI's IST wall clock as if it were UTC
 
 HoldGraded = Callable[[dict], None]
 
@@ -85,7 +87,7 @@ def ingest(store: Store, readings: list[StationReading], cams: dict[int, dict[st
         if prev and prev["ts"] >= r.ts:
             continue
         store.put(f"READ#{r.uid}", f"{r.ts:012d}", {
-            "ts": r.ts, "values": r.values,
+            "ts": r.ts, "values": r.values, "v": DATA_V,
             "cams": {p: c for p in r.values if (c := cams_at(cams, r.ts, p)) is not None}})
         new.append(r)
 
@@ -100,6 +102,56 @@ def ingest(store: Store, readings: list[StationReading], cams: dict[int, dict[st
     store.put("KV", "poll", {"at": now_ts, "stations": len(readings), "new": len(new),
                              "graded": graded, "expired": expired})
     return {"stations": len(readings), "new": len(new), "graded": graded, "expired": expired}
+
+
+def migrate_v2(store: Store, now_ts: int) -> dict:
+    """One-time rewrite of what was stored before the fix: readings move to real UTC and the CPCB
+    scale, promises are converted and re-graded by the first reading after them (a reading from
+    before a promise can no longer have graded it), and calibration restarts on the new scale.
+    Idempotent and resumable: finished items carry DATA_V."""
+    out = {"readings": 0, "predictions": 0, "stations": 0}
+    if (store.get("KV", "migration") or {}).get("v2"):
+        return out
+    cams = get_cams(store)
+    for uid, meta in list_stations(store).items():
+        for item in store.query(f"READ#{uid}"):  # oldest first, so a new key never lands on an unmoved one
+            if item.get("v") == DATA_V:
+                continue
+            ts = item["ts"] - LEGACY_SHIFT_S
+            values = {p: round(cpcb_from_us(p, v), 1) for p, v in item["values"].items()}
+            store.put(f"READ#{uid}", f"{ts:012d}", {
+                "ts": ts, "values": values, "v": DATA_V,
+                "cams": {p: c for p in values if (c := cams_at(cams, ts, p)) is not None}})
+            store.delete(item["pk"], item["sk"])
+            out["readings"] += 1
+        readings = store.query(f"READ#{uid}")
+        for item in store.query(f"PRED#{uid}"):
+            if item.get("v") != DATA_V:
+                _migrate_prediction(store, item, readings, now_ts)
+                out["predictions"] += 1
+        if meta.get("v") != DATA_V:
+            meta.update(cal={}, v=DATA_V)
+            store.put("STATION", str(uid), meta)
+            out["stations"] += 1
+    store.delete("KV", "reliability")
+    store.put("KV", "migration", {"v2": now_ts, **out})
+    return out
+
+
+def _migrate_prediction(store: Store, item: dict, readings: list[dict], now_ts: int) -> None:
+    p = item["pollutant"]
+    for k in ("lo", "hi", "point"):
+        if item.get(k) is not None:
+            item[k] = cpcb_from_us(p, item[k])
+    judge = next((r for r in readings if grader.is_judge_reading(item["created_ts"], r["ts"])
+                  and p in r["values"]), None)
+    if judge:
+        g = grader.grade(item["lo"], item["hi"], judge["values"][p])
+        item.update(status=g.status, actual=g.actual, miss_by=g.miss_by, actual_ts=judge["ts"], graded_at=now_ts)
+    elif item.get("status") != grader.MISSED_WAITING:
+        item.update(status=grader.PENDING, actual=None, miss_by=0, actual_ts=None)
+    item["v"] = DATA_V
+    store.put(item["pk"], item["sk"], item)
 
 
 def _calibrate(store: Store, meta: dict, r: StationReading, cams: dict, now_ts: int,
@@ -250,7 +302,7 @@ def _new_prediction(store: Store, meta: dict, kind: str, sk: str, pid: str, now_
     item = {"id": pid, "kind": kind, "uid": meta["uid"], "name": meta["name"], "pollutant": p,
             "created_ts": now_ts, "date": ist_date(now_ts), "lo": est.lo, "hi": est.hi,
             "point": est.point, "calibrated": est.calibrated, "degraded": est.degraded,
-            "status": grader.PENDING, **(extra or {})}
+            "status": grader.PENDING, "v": DATA_V, **(extra or {})}
     # a degraded (own-stale-value-only) estimate must not pollute the calibration residuals
     item["calibrated_basis"] = not est.degraded
     store.put(f"PRED#{meta['uid']}", sk, item)

@@ -36,6 +36,29 @@ def sub_index(pollutant: str, conc: float) -> float:
     return 500.0
 
 
+# WAQI/aqicn publish only the US-EPA AQI, from 1-hour readings, on aqicn's own table
+# (air-cache/calculator/dist/calculator.js: the pre-2024 PM2.5 breakpoints).
+US_AQI = (0, 50, 100, 150, 200, 300, 400, 500)
+US_CONC = {"pm25": (0, 12, 35.5, 55.5, 150.5, 250.5, 350.5, 500.5),
+           "pm10": (0, 55, 155, 255, 355, 425, 505, 605)}
+
+
+def us_concentration(pollutant: str, us_aqi: float) -> float:
+    """Invert aqicn's piecewise-linear US-EPA AQI back to ug/m3 (the top segment extrapolates past 500)."""
+    if us_aqi <= 0:
+        return 0.0
+    c = US_CONC[pollutant]
+    for i in range(1, len(US_AQI)):
+        if us_aqi <= US_AQI[i] or i == len(US_AQI) - 1:
+            return c[i - 1] + (us_aqi - US_AQI[i - 1]) * (c[i] - c[i - 1]) / (US_AQI[i] - US_AQI[i - 1])
+    return 0.0
+
+
+def cpcb_from_us(pollutant: str, us_aqi: float) -> float:
+    """A WAQI (US-EPA) value as a CPCB sub-index: the scale the Go/Wait/Stay rule is written for."""
+    return sub_index(pollutant, us_concentration(pollutant, us_aqi))
+
+
 def band_index(si: float) -> int:
     for i, (upper, _, _) in enumerate(BANDS):
         if si <= upper:
