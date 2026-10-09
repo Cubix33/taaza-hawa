@@ -218,3 +218,11 @@ html[lang="hi"] .lens-scene-caption, html[lang="hi"] .lens-directory h2, html[la
   .lens-tile-notice, .lens-pin-prompt { left: 17px; top: 132px; }
 }
 @media (prefers-reduced-motion: reduce) { .lens-loading-ring { animation: none; } .lens-page *, .lens-page *::after { transition: none !important; } .lens-map-tools [data-lens="orbit"] { display: none; } }
+
+/* ---- Living sky (air-lens-sky.js): Live/Dusk/Day toggle and the "illustrative, not a camera" caption.
+   The haze itself is drawn in WebGL under the map labels, so markers and evidence lines stay crisp. */
+.lens-live-dot { display: inline-block; width: 6px; height: 6px; margin: 0 6px 1px 0; border-radius: 50%; background: currentColor; opacity: .35; vertical-align: middle; }
+.lens-scene-theme button.active .lens-live-dot { background: #2f9e6e; opacity: 1; }
+.lens-scene-bottom .lens-sky-caption { margin: -12px 0 16px; max-width: 54ch; font-size: 10.5px; line-height: 1.45; color: var(--map-muted); text-shadow: 0 0 3px #15292c, 0 0 9px #15292c; }
+.lens-stage.day .lens-sky-caption { text-shadow: 0 0 3px #e8e4d8, 0 0 9px #e8e4d8; }
+@media (max-width: 760px) { .lens-scene-bottom .lens-sky-caption { margin: -8px 0 12px; font-size: 10px; max-width: none; } }

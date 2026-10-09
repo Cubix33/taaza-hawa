@@ -1,5 +1,6 @@
 import { emptyGeoJSON, evidenceGeoJSON, validCoordinate, stationReading, readingColor } from './air-lens-data.js';
 import { addBuildings, styleMap } from './air-lens-style.js';
+import { mountSky } from './air-lens-sky.js';
 
 export async function mountAirLens(el, getData, handlers, signal) {
   const [gl, { default: workerUrl }] = await Promise.all([
@@ -11,11 +12,11 @@ export async function mountAirLens(el, getData, handlers, signal) {
   const mobile = matchMedia('(max-width: 760px)').matches;
   let ready = false, destroyed = false, orbiting = false, frame = 0, prevTime = 0, timer;
   const markers = new Map();
-  let userMarker = null, appliedNight;
+  let userMarker = null, appliedNight, sky;
   const map = new gl.Map({
     container: el, style: 'https://tiles.openfreemap.org/styles/positron',
     center: [77.17, 28.64], zoom: mobile ? 9.7 : 10.45, pitch: mobile ? 30 : 48, bearing: -18,
-    minZoom: 8, maxZoom: 18, maxPitch: 65, maxBounds: [[76.55, 28.1], [77.8, 29.2]],
+    minZoom: 8, maxZoom: 18, maxPitch: 75, maxBounds: [[76.55, 28.1], [77.8, 29.2]],
     canvasContextAttributes: { antialias: true }, attributionControl: { compact: true },
   });
   map.addControl(new gl.ScaleControl({ maxWidth: 90, unit: 'metric' }), 'bottom-left');
@@ -56,13 +57,16 @@ export async function mountAirLens(el, getData, handlers, signal) {
     map.addLayer({ id: 'lens-evidence-line', type: 'line', source: 'lens-evidence', paint: { 'line-color': '#9ee4cf', 'line-width': 1.5, 'line-opacity': 0.8, 'line-dasharray': [4, 3] } });
     map.addSource('lens-location', { type: 'geojson', data: emptyGeoJSON() });
     map.addLayer({ id: 'lens-location-line', type: 'line', source: 'lens-location', paint: { 'line-color': '#8dbefb', 'line-width': 2, 'line-dasharray': [2, 3] } });
+    sky = mountSky(map, reduce);
     ready = true;
   } catch (error) { destroy(); throw error; }
 
   function update() {
     if (destroyed || !ready) return;
     const d = getData();
-    if (appliedNight !== d.night) { styleMap(map, d.night); appliedNight = d.night; }
+    const restyled = appliedNight !== d.night;
+    if (restyled) { styleMap(map, d.night); appliedNight = d.night; }
+    sky.apply(d.look, restyled);
     el.classList.toggle('is-placing', d.placing);
     const ids = new Set(d.stations.map((s) => s.uid));
     for (const [uid, m] of markers) if (!ids.has(uid)) { m.marker.remove(); markers.delete(uid); }
@@ -137,7 +141,7 @@ export async function mountAirLens(el, getData, handlers, signal) {
     frame = requestAnimationFrame(tick);
   }
   update();
-  return { update, focus, city, orbit, stopOrbit, destroy, resize: () => map.resize(),
+  return { update, focus, city, orbit, stopOrbit, destroy, resize: () => map.resize(), sky: () => sky.apply(getData().look),
     flat: () => move({ pitch: 0, bearing: 0 }),
     zoom: (delta) => { stopOrbit(); map.zoomTo(map.getZoom() + delta, { duration: reduce.matches ? 0 : 350 }); },
     north: () => move({ bearing: 0 }),
