@@ -78,9 +78,10 @@ export async function mountAirLens(el, getData, handlers, signal) {
         const marker = new gl.Marker({ element: button, anchor: 'bottom' }).setLngLat([s.lon, s.lat]).addTo(map);
         m = { marker, button }; markers.set(s.uid, m);
       }
-      const reading = stationReading(s, d.pollutant), selected = s.uid === d.current;
+      const reading = d.readingFor?.(s) ?? stationReading(s, d.pollutant), selected = s.uid === d.current; // readingFor: 24 h replay
       m.button.classList.add('lens-marker');
       for (const status of ['fresh', 'stale', 'missing']) m.button.classList.toggle(status, reading.status === status);
+      m.button.classList.toggle('historical', !!reading.historical);
       m.button.classList.toggle('selected', selected);
       m.button.style.setProperty('--reading', readingColor(reading.value));
       m.button.setAttribute('aria-pressed', String(selected));
