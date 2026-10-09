@@ -229,7 +229,7 @@ Then connect this repo in **Amplify Hosting** (it reads `amplify.yml`) and set `
 | `FirmsMapKey` | Free [NASA FIRMS map key](https://firms.modaps.eosdis.nasa.gov/api/map_key) (NoEcho); empty hides the fire count |
 | `BedrockModelId` | e.g. `in.anthropic.claude-haiku-4-5-20251001-v1:0`; empty uses the plain template sentence |
 
-> **Order matters.** The website and the backend deploy separately. Pushing to GitHub rebuilds the **website** (Amplify). Changes under `backend/` or `infra/` only go live when you run `sam build` and `sam deploy`. Deploy the backend first when a change touches both.
+> **Order matters.** The website and the backend deploy separately. Pushing to GitHub rebuilds the **website** (Amplify). Changes under `backend/` or `infra/` only go live when you run `sam build` and `sam deploy`. Deploy the backend first when a change touches both. Full checklist, and how to tell whether each half is live: [docs/DEPLOYING.md](docs/DEPLOYING.md).
 
 Cost at hackathon scale sits inside the AWS Free Tier. Bedrock (if enabled) and Polly are the only per-call costs, and Polly output is cached.
 
