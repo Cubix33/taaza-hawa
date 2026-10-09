@@ -18,16 +18,16 @@ LANG_CODE = {"hi": "hi-IN", "en": "en-IN"}
 MAX_CHARS = 700  # a spoken answer is a few sentences; Polly's own limit is 3000
 
 SAY = {
-    "hi": {"GO": "हाँ, जाइए।", "WAIT": "अभी नहीं। दस बजे के बाद।", "STAY": "नहीं, आज अंदर रहिए।", "UNKNOWN": "अभी पक्का नहीं कह सकते।"},
-    "en": {"GO": "Yes, go ahead.", "WAIT": "Not yet. After ten AM.", "STAY": "No. Stay in today.", "UNKNOWN": "We can't say for sure right now."},
+    "hi": {"GO": "हाँ, जाइए।", "WAIT": "अभी नहीं। हवा सुधरने का इंतज़ार करें।", "STAY": "नहीं, आज अंदर रहिए।", "UNKNOWN": "अभी पक्का नहीं कह सकते।"},
+    "en": {"GO": "Yes, go ahead.", "WAIT": "Not yet. Wait for air to improve.", "STAY": "No. Stay in today.", "UNKNOWN": "We can't say for sure right now."},
 }
 ADVICE = {
     "hi": {"GO": "हवा ठीक है। बाहर जाना, दौड़ना या खेलना ठीक है।",
-           "WAIT": "अभी हवा खराब है। सुबह के बाद हवा आमतौर पर थोड़ी साफ़ होती है, इसलिए दौड़ या सैर दस बजे के बाद करें।",
+           "WAIT": "अभी हवा खराब है। बाहरी मेहनत या दौड़-सैर से पहले हवा की स्थिति सुधरने का इंतज़ार करें।",
            "STAY": "हवा बहुत खराब है। आज बाहर कसरत या खेल न करें।",
            "UNKNOWN": "इस स्टेशन का भरोसेमंद नंबर अभी नहीं है। पास का कोई और स्टेशन चुनें।"},
     "en": {"GO": "The air is OK. Going out, running or playing is fine.",
-           "WAIT": "The air is poor right now. It usually clears a little later in the morning, so run or walk after ten AM.",
+           "WAIT": "The air is poor right now. Wait for conditions to improve or exercise caution before strenuous outdoor activity.",
            "STAY": "The air is very poor. Skip outdoor exercise and games today.",
            "UNKNOWN": "We don't have a reliable number for this station right now. Pick another nearby station."},
 }

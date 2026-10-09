@@ -1,17 +1,63 @@
 import { api, post } from "./api.js";
 import { state, set, ls } from "./store.js";
 
-export async function loadStations() {
-  const st = await api("/stations");
-  state.stations = st.stations;
-  state.demo = !!st.demo;
-  if (!state.stations.some((s) => s.uid === state.uid) && state.stations[0]) state.uid = state.stations[0].uid;
+let stationsPromise = null;
+
+export async function loadStations(force = false) {
+  if (!force && state.stations?.length) {
+    if (!state.stations.some((s) => s.uid === state.uid) && state.stations[0]) {
+      state.uid = state.stations[0].uid;
+      ls.set("uid", state.uid);
+    }
+    return state.stations;
+  }
+  if (!stationsPromise) {
+    stationsPromise = (async () => {
+      try {
+        const st = await api("/stations");
+        state.stations = st.stations || [];
+        state.demo = !!st.demo;
+        if (!state.stations.some((s) => s.uid === state.uid) && state.stations[0]) {
+          state.uid = state.stations[0].uid;
+          ls.set("uid", state.uid);
+        }
+        return state.stations;
+      } finally {
+        stationsPromise = null;
+      }
+    })();
+  }
+  return stationsPromise;
 }
 
 export async function loadCard() {
-  const [card, hist] = await Promise.all([api(`/card?uid=${state.uid}`), api(`/history?uid=${state.uid}&hours=24`).catch(() => null), loadStations()]);
-  state.card = card;
-  state.history = hist;
+  await loadStations();
+  if (!state.stations.some((s) => s.uid === state.uid) && state.stations[0]) {
+    state.uid = state.stations[0].uid;
+    ls.set("uid", state.uid);
+  }
+  if (!state.uid) return;
+  try {
+    const [card, hist] = await Promise.all([
+      api(`/card?uid=${state.uid}`),
+      api(`/history?uid=${state.uid}&hours=24`).catch(() => null),
+    ]);
+    state.card = card;
+    state.history = hist;
+  } catch (err) {
+    if (state.stations[0] && state.uid !== state.stations[0].uid) {
+      state.uid = state.stations[0].uid;
+      ls.set("uid", state.uid);
+      const [card, hist] = await Promise.all([
+        api(`/card?uid=${state.uid}`),
+        api(`/history?uid=${state.uid}&hours=24`).catch(() => null),
+      ]);
+      state.card = card;
+      state.history = hist;
+    } else {
+      throw err;
+    }
+  }
 }
 
 export async function loadBoard() {

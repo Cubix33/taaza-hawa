@@ -92,11 +92,12 @@ export function view() {
     <div>
       <div class="ledger">
         <div><b class="ok">${k?.HIT ?? 0}</b><span>${t("tallyHit")}</span></div>
-        <div><b class="no">${k ? k.MISSED + k.MISSED_WAITING : 0}</b><span>${t("tallyMiss")}</span></div>
+        <div><b class="no">${k?.MISSED ?? 0}</b><span>${t("tallyMiss")}</span></div>
+        <div><b class="un">${k?.MISSED_WAITING ?? 0}</b><span>${t("tallyUnverified")}</span></div>
         <div><b>${k?.PENDING ?? 0}</b><span>${t("tallyPend")}</span></div>
       </div>
       ${recent ? `<div class="ticket"><span>${esc(recent.name)}</span><b>AQI ${Math.round(recent.lo)}–${Math.round(recent.hi)}</b>
-        <em class="${recent.status === "HIT" ? "ok" : recent.status === "PENDING" ? "" : "no"}">${recent.status === "HIT" ? t("hit") : recent.status === "PENDING" ? t("s2") : recent.status === "MISSED" ? t("missedBy", recent.miss_by) : t("missedWaiting")}</em></div>` : ""}
+        <em class="${recent.status === "HIT" ? "ok" : recent.status === "PENDING" ? "" : recent.status === "MISSED" ? "no" : "un"}">${recent.status === "HIT" ? t("hit") : recent.status === "PENDING" ? t("s2") : recent.status === "MISSED" ? t("missedBy", recent.miss_by) : t("missedWaiting")}</em></div>` : ""}
     </div>
   </div></section>
 

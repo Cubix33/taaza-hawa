@@ -18,9 +18,9 @@ WeMakeDevs × AWS **Environmental Hacks 2026**
 
 <br/>
 
-<img src="docs/screenshots/home.jpg" alt="Taaza Hawa home page: a Delhi skyline under a sky drawn from the city's live air quality, with the answer 'Not yet, after 10 AM'" width="900"/>
+<img src="docs/screenshots/home.jpg" alt="Taaza Hawa home page: an illustrative Delhi skyline parameterized by the city's live air quality, with the answer 'Not yet. Wait for air to improve'" width="900"/>
 
-<sub>The sky, the haze and the sun are computed from Delhi's live AQI: clear air looks clear, smog looks like smog. <i>(Screenshots on this page use clearly labelled demo data.)</i></sub>
+<sub>The sky, the haze and the sun are an illustrative artwork parameterized by Delhi's live AQI: clear air looks clear, smog looks like smog. <i>(Screenshots on this page use clearly labelled demo data.)</i></sub>
 
 </div>
 
@@ -44,7 +44,7 @@ Nobody tells people **how old** the number is, gives them an honest estimate whe
 
 | | |
 |---|---|
-| **One plain answer** | **हाँ, जाइए** · **अभी नहीं, 10 बजे के बाद** · **नहीं, आज अंदर रहिए**, from a fixed, published rule on the CPCB AQI bands, followed by a short *"क्यों? / Why?"* in everyday words. |
+| **One plain answer** | **हाँ, जाइए** · **अभी नहीं, हवा सुधरने का इंतज़ार करें** · **नहीं, आज अंदर रहिए**, from a fixed, published rule on the CPCB AQI bands, followed by a short *"क्यों? / Why?"* in everyday words. |
 | **The age of every number** | Each answer says how many hours ago the station measured it, and where it came from. Always. |
 | **An honest range when it's old** | If a station's number is over 3 h old, the app shows *"AQI probably 232–264"*: a split-conformal interval built from the 3 nearest live stations plus bias-corrected CAMS. Advice uses the top of the range, to be careful. |
 | **Check it and tell me** | One tap, no account. An **AWS Step Functions** execution waits (at no compute cost) until that station reports again, then the page shows whether the real number landed inside our range. |

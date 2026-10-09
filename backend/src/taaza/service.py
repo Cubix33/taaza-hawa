@@ -339,17 +339,25 @@ def history(store: Store, uid: int, now_ts: int, hours: int = 24) -> list[dict]:
 
 
 def accuracy(store: Store) -> dict:
-    """How often the graded promises (morning estimates and holds) landed inside the range.
-    Pending promises are not counted; 'Missed, still waiting' counts as a miss."""
-    per, hits, graded = [], 0, 0
+    """How often observed readings landed inside the range.
+    Only promises with an observed reading (HIT or MISSED) are graded for range accuracy;
+    unverified timeouts ('couldn't verify', MISSED_WAITING) are tracked separately."""
+    per, hits, graded, unverified = [], 0, 0, 0
     for uid, meta in list_stations(store).items():
-        h = g = 0
+        h = m = u = 0
         for item in store.query(f"PRED#{uid}"):
-            if item.get("status") in (grader.HIT, grader.MISSED, grader.MISSED_WAITING):
-                g += 1
-                h += item["status"] == grader.HIT
-        if g:
-            per.append({"uid": uid, "name": meta["name"], "hits": h, "graded": g})
-        hits, graded = hits + h, graded + g
+            st = item.get("status")
+            if st == grader.HIT:
+                h += 1
+            elif st == grader.MISSED:
+                m += 1
+            elif st == grader.MISSED_WAITING:
+                u += 1
+        g = h + m
+        if g or u:
+            per.append({"uid": uid, "name": meta["name"], "hits": h, "misses": m, "unverified": u, "graded": g})
+        hits += h
+        graded += g
+        unverified += u
     per.sort(key=lambda r: (-r["graded"], r["name"]))
-    return {"hits": hits, "graded": graded, "target": 0.8, "stations": per}
+    return {"hits": hits, "graded": graded, "misses": graded - hits, "unverified": unverified, "target": 0.8, "stations": per}
