@@ -348,7 +348,7 @@ def accuracy(store: Store) -> dict:
     """How often observed readings landed inside the range.
     Only promises with an observed reading (HIT or MISSED) are graded for range accuracy;
     unverified timeouts ('couldn't verify', MISSED_WAITING) are tracked separately."""
-    per, hits, graded, unverified = [], 0, 0, 0
+    per, hits, graded, unverified, warming, widths = [], 0, 0, 0, 0, []
     for uid, meta in list_stations(store).items():
         h = m = u = 0
         for item in store.query(f"PRED#{uid}"):
@@ -359,6 +359,10 @@ def accuracy(store: Store) -> dict:
                 m += 1
             elif st == grader.MISSED_WAITING:
                 u += 1
+            # the uncalibrated placeholder band (fewer than MIN_CALIBRATION errors); degraded ones are a different case
+            if st in (grader.HIT, grader.MISSED) and item.get("calibrated") is not True and not item.get("degraded"):
+                warming += 1
+                widths.append(item["hi"] - item["lo"])
         g = h + m
         if g or u:
             per.append({"uid": uid, "name": meta["name"], "hits": h, "misses": m, "unverified": u, "graded": g})
@@ -366,4 +370,5 @@ def accuracy(store: Store) -> dict:
         graded += g
         unverified += u
     per.sort(key=lambda r: (-r["graded"], r["name"]))
-    return {"hits": hits, "graded": graded, "misses": graded - hits, "unverified": unverified, "target": 0.8, "stations": per}
+    return {"hits": hits, "graded": graded, "misses": graded - hits, "unverified": unverified, "target": 0.8,
+            "warming": warming, "mean_width": round(sum(widths) / len(widths)) if widths else None, "stations": per}

@@ -45,7 +45,7 @@ export function view() {
       <button class="btn line" id="exToggle">${example ? t("exReal") : t("exShow")}</button>
     </div>` : ""}
     <section class="rec-summary panel">
-      <div class="rs-ring">${ring(rate)}<span>${rate != null ? t("rateL") : t("stRatePending")}</span></div>
+      <div class="rs-ring">${ring(rate)}<span>${rate != null ? t("rateL") : t("stRatePending")}<small class="rs-n">${t("ringN", graded)}</small></span></div>
       <div class="tally">
         <div class="t-hit"><b>${k.HIT}</b><span>${t("tallyHit")}</span></div>
         <div class="t-miss"><b>${k.MISSED}</b><span>${t("tallyMiss")}</span></div>
@@ -84,7 +84,8 @@ function accuracyView(acc) {
   const unv = acc.unverified ? ` · <span class="muted small">${t("accUnverifiedNote", acc.unverified)}</span>` : "";
   const head = !acc.graded ? `<p class="muted">${t("accNone")}${unv}</p>` : `
     <div class="acc-top"><b>${t("accTotal", acc.hits, acc.graded)}</b>${acc.graded < FEW ? `<span class="muted small">${t("accFew", acc.graded)}</span>` : ""}${unv}</div>
-    <div class="acc-bar"><i style="width:${pct(acc.hits, acc.graded)}%"></i><em style="left:80%"><span>${t("accTarget")}</span></em></div>`;
+    <div class="acc-bar"><i style="width:${pct(acc.hits, acc.graded)}%"></i><em style="left:80%"><span>${t("accTarget")}</span></em></div>
+    ${acc.warming && acc.mean_width != null ? `<p class="acc-warm">${t("accWarm", acc.warming, acc.graded, acc.mean_width)}</p>` : ""}`;
   return `<section class="panel acc">
     <h2 class="h2s">${t("accTitle")}</h2>
     <p class="muted acc-lead">${t("accLead")}</p>
