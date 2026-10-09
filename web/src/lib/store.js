@@ -4,6 +4,7 @@ export const ls = {
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
 };
 
+// optional chaining: node --test imports this module, where import.meta.env doesn't exist
 export const DEFAULT_UID = Number(import.meta.env?.VITE_DEFAULT_UID || 1);
 
 export const state = {

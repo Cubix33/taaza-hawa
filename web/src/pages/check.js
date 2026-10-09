@@ -53,7 +53,7 @@ function whyList(c) {
 function waitPointer(c) {
   const stale = c.state !== "fresh";
   const bits = [t("waitNext", stale)];
-  if (stale && c.can_hold && c.interval) bits.push(t("waitHold"));
+  if (stale && c.can_hold && c.interval && state.hold?.uid !== c.uid) bits.push(t("waitHold"));
   if (state.history?.points?.length) bits.push(t("waitTrend"));
   return bits.join(" ");
 }

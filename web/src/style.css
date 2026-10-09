@@ -526,7 +526,7 @@ html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
 
 /* ===== mobile pass ===== */
 @media (max-width: 1080px) {
-  /* check page: the answer, then "Check it and tell me", then the details; the long station list last */
+  /* check page: the answer, then "Hold me to this", then the details; the long station list last */
   .cols { display: flex; flex-direction: column; gap: 20px; }
   .col-a, .col-b { display: contents; }
   .hero-card { order: 1; } .col-b > * { order: 2; } .facts { order: 3; } .allst { order: 4; }
