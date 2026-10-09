@@ -6,9 +6,11 @@ import { api } from '../lib/api.js';
 import { mountAirLens } from '../lib/air-lens-map.js';
 import { stationReading, nearestStation, readingColor } from '../lib/air-lens-data.js';
 import { detailPanel, words as w, statusName, pollutantName } from '../lib/air-lens-panel.js';
+import { loadWind, windControls, windFootnote, WIND_PREF } from '../lib/air-lens-wind-ui.js';
 
 const lens = { card: null, loading: false, error: false, pollutant: 'pm25', filter: 'all', query: '', night: true, evidence: true, pin: null, placing: false, orbit: false, failed: false, tileError: false, ready: false, view: 'city', locationMessage: '', locating: false };
 let scene = null, request = null, refreshTimer = null, active = false, generation = 0, locationRequest = 0, renderedUid = null;
+Object.assign(lens, { windOn: ls.get(WIND_PREF) === '1', windField: null }); // wind layer: lib/air-lens-wind*.js
 const current = () => state.stations.find((s) => s.uid === state.uid);
 const visible = () => state.stations.filter((s) => (lens.filter === 'all' || stationReading(s, lens.pollutant).status === lens.filter) && s.name.toLowerCase().includes(lens.query.toLowerCase().trim()));
 const button = (action, label, selected = false, extra = '') => `<button type="button" data-lens="${action}" class="${selected ? 'active' : ''}" aria-pressed="${selected}" ${extra}>${label}</button>`;
@@ -16,6 +18,7 @@ const button = (action, label, selected = false, extra = '') => `<button type="b
 export async function load() {
   active = true;
   const epoch = ++generation;
+  loadWind().then((field) => { if (active && field !== lens.windField) { lens.windField = field; set({}); } }); // never rejects; null hides wind
   try {
     await loadStations(true);
     if (!active || epoch !== generation) return;
@@ -84,8 +87,10 @@ export function view() {
       <div class="lens-map-footer"><div class="lens-pollutants"><span>${w('MAP READINGS', 'नक्शे की रीडिंग')}</span>${button('pm25', 'PM₂.₅', lens.pollutant === 'pm25')}${button('pm10', 'PM₁₀', lens.pollutant === 'pm10')}<small>${w('sub-index', 'उप-सूचकांक')}</small></div><div class="lens-map-key"><span><i class="solid"></i>${w('Fresh', 'ताज़ा')}</span><span><i class="dashed"></i>${w('Over 3h old', '3 घंटे से पुरानी')}</span><span><i class="missing"></i>${w('Missing', 'रीडिंग नहीं')}</span></div></div>
     </div>
     <div class="lens-actions"><div>${button('locate', `${icon.target}${lens.locating ? w('Locating…', 'स्थान खोज रहे हैं…') : w('Use my location', 'मेरा स्थान')}`, false, lens.locating ? 'disabled' : '')}${button('pin', `${icon.pin}${w('Drop a pin', 'पिन रखें')}`, lens.placing)}${lens.pin ? button('clear-pin', w('Clear pin', 'पिन हटाएँ')) : ''}<span class="lens-location-message" role="status">${esc(lens.locationMessage)}</span></div><label class="lens-evidence-toggle"><input id="lens-evidence-toggle" type="checkbox" ${lens.evidence ? 'checked' : ''}>${w('Show estimate connections', 'अंदाज़े के संबंध दिखाएँ')}</label></div>
+    ${windControls(lens)}
     <div class="lens-colour-scale"><span>${pollutantName(lens.pollutant)} ${w('sub-index', 'उप-सूचकांक')}</span><div>${[50, 100, 200, 300, 400, 500].map((v) => `<span><i style="background:${readingColor(v)}"></i><small>${v}</small></span>`).join('')}</div><span>${w('Higher = more polluted · zoom for more markers', 'ज़्यादा = अधिक प्रदूषण · और रीडिंग के लिए ज़ूम करें')}</span></div>
     <p class="lens-footnote">${w('Connections show inputs to an estimate, not the movement of pollution. Buildings give geographic context; their heights do not describe air quality.', 'रेखाएँ अंदाज़े में इस्तेमाल हुई रीडिंग दिखाती हैं, प्रदूषण की गति नहीं। इमारतों की ऊँचाई केवल भौगोलिक जानकारी है।')}</p>
+    ${windFootnote(lens)}
     <section class="lens-directory" aria-labelledby="lens-directory-title"><div class="lens-directory-head"><div><span class="lens-overline">${w('THE STATION NETWORK', 'स्टेशन नेटवर्क')}</span><h2 id="lens-directory-title">${w('Find your corner of Delhi.', 'दिल्ली में अपना इलाक़ा खोजें।')}</h2></div><label class="lens-search">${icon.search}<input id="lens-search" type="search" placeholder="${w('Search a station…', 'स्टेशन खोजें…')}" aria-label="${w('Search stations', 'स्टेशन खोजें')}" value="${esc(lens.query)}"></label></div>
       <div class="lens-filter-row">${button('all', w('All stations', 'सभी स्टेशन'), lens.filter === 'all')}${button('fresh', w('Fresh readings', 'ताज़ा रीडिंग'), lens.filter === 'fresh')}${button('stale', w('Old readings', 'पुरानी रीडिंग'), lens.filter === 'stale')}${button('missing', w('Missing readings', 'रीडिंग नहीं'), lens.filter === 'missing')}<span id="lens-result-count">${visible().length} ${w('stations', 'स्टेशन')}</span></div><ul class="lens-station-list" id="lens-station-list">${stationRows()}</ul>
     </section>
@@ -153,6 +158,7 @@ export function bind() {
     scene?.api?.update();
   });
   document.getElementById('lens-evidence-toggle')?.addEventListener('change', (event) => { lens.evidence = event.target.checked; scene?.api?.update(); });
+  document.getElementById('lens-wind-toggle')?.addEventListener('change', (event) => { lens.windOn = event.target.checked; ls.set(WIND_PREF, lens.windOn ? '1' : '0'); set({}); });
   const slot = document.getElementById('air-lens-map');
   if (!slot) { scene?.controller.abort(); scene = null; lens.ready = false; return; }
   if (lens.failed) return;

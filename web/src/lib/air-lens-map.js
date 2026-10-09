@@ -1,5 +1,6 @@
 import { emptyGeoJSON, evidenceGeoJSON, validCoordinate, stationReading, readingColor } from './air-lens-data.js';
 import { addBuildings, styleMap } from './air-lens-style.js';
+import { mountWind } from './air-lens-wind-layer.js';
 
 export async function mountAirLens(el, getData, handlers, signal) {
   const [gl, { default: workerUrl }] = await Promise.all([
@@ -12,6 +13,7 @@ export async function mountAirLens(el, getData, handlers, signal) {
   let ready = false, destroyed = false, orbiting = false, frame = 0, prevTime = 0, timer;
   const markers = new Map();
   let userMarker = null, appliedNight;
+  let wind = null; // canvas wind overlay (air-lens-wind-layer.js), mounted once the map is ready
   const map = new gl.Map({
     container: el, style: 'https://tiles.openfreemap.org/styles/positron',
     center: [77.17, 28.64], zoom: mobile ? 9.7 : 10.45, pitch: mobile ? 30 : 48, bearing: -18,
@@ -27,6 +29,7 @@ export async function mountAirLens(el, getData, handlers, signal) {
     destroyed = true; clearTimeout(timer); stopOrbit(); observer.disconnect();
     document.removeEventListener('visibilitychange', onVisibility);
     reduce.removeEventListener('change', onReduce);
+    wind?.destroy();
     markers.forEach((m) => m.marker.remove()); userMarker?.remove(); map.remove();
   };
   const onVisibility = () => { if (document.hidden) { stopOrbit(); map.stop(); } };
@@ -56,6 +59,7 @@ export async function mountAirLens(el, getData, handlers, signal) {
     map.addLayer({ id: 'lens-evidence-line', type: 'line', source: 'lens-evidence', paint: { 'line-color': '#9ee4cf', 'line-width': 1.5, 'line-opacity': 0.8, 'line-dasharray': [4, 3] } });
     map.addSource('lens-location', { type: 'geojson', data: emptyGeoJSON() });
     map.addLayer({ id: 'lens-location-line', type: 'line', source: 'lens-location', paint: { 'line-color': '#8dbefb', 'line-width': 2, 'line-dasharray': [2, 3] } });
+    try { wind = mountWind(map, reduce); } catch { wind = null; } // wind is optional context; never block the map
     ready = true;
   } catch (error) { destroy(); throw error; }
 
@@ -99,6 +103,7 @@ export async function mountAirLens(el, getData, handlers, signal) {
       if (validCoordinate(selected)) line.features.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [d.pin, [selected.lon, selected.lat]] } });
     } else { userMarker?.remove(); userMarker = null; }
     map.getSource('lens-location').setData(line);
+    wind?.update(d.windOn, d.windField, d.night);
     declutter();
   }
   function declutter() {

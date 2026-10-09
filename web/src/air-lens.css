@@ -218,3 +218,25 @@ html[lang="hi"] .lens-scene-caption, html[lang="hi"] .lens-directory h2, html[la
   .lens-tile-notice, .lens-pin-prompt { left: 17px; top: 132px; }
 }
 @media (prefers-reduced-motion: reduce) { .lens-loading-ring { animation: none; } .lens-page *, .lens-page *::after { transition: none !important; } .lens-map-tools [data-lens="orbit"] { display: none; } }
+
+/* ==== Air Lens wind (ticket 02) ==========================================================
+   Open-Meteo model wind as weather context: canvas overlay, layer toggle + key, panel readout.
+   Logic: lib/air-lens-wind.js (pure), lib/air-lens-wind-layer.js (canvas), lib/air-lens-wind-ui.js. */
+.lens-wind-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.lens-wind-row { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin-top: 9px; }
+.lens-wind-key { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted); }
+.lens-wind-key i { width: 18px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--lens-accent)); }
+.lens-wind-key a, .lens-wind-line a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.lens-wind-line { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; padding-top: 11px; border-top: 1px dashed var(--line); }
+.lens-wind-arrow { flex: 0 0 auto; width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--lens-accent); }
+.lens-wind-arrow svg { width: 13px; height: 13px; transform: rotate(var(--toward, 0deg)); }
+.lens-wind-arrow.calm::after { content: ''; width: 6px; height: 6px; border: 1.5px solid currentColor; border-radius: 50%; }
+.lens-wind-line p { margin: 0; min-width: 0; }
+.lens-wind-line b { display: block; font-size: 12px; font-weight: 500; line-height: 1.35; color: var(--ink2); }
+.lens-wind-line small { display: block; margin-top: 3px; font-size: 9px; line-height: 1.5; color: var(--muted); }
+.lens-wind-footnote { margin-top: 4px; }
+@media (max-width: 760px) {
+  .lens-wind-row { justify-content: flex-start; flex-direction: column-reverse; align-items: flex-start; margin-top: 12px; }
+  .lens-wind-line b { font-size: 14px; }
+  .lens-wind-line small { font-size: 11px; }
+}
