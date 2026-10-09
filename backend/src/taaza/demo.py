@@ -47,3 +47,54 @@ def seed(now_ts: int, hours: int = 72, seed_: int = 11) -> MemoryStore:
                           "window_h": 48, "radius_km": 500, "source": "NASA FIRMS (VIIRS) · wind: Open-Meteo",
                           "demo": True})
     return s
+
+
+# ---------- a labelled demo network for the Bad-air plan (local demo server only) ----------
+# Fictional organisations, every name marked "(demo)". A week of synthetic history so the
+# checklist, the 30-day record and the public action ledger have something to show.
+NETWORK = [
+    ("Nilgiri Public School (demo)", "school", 1, None),
+    ("Yamuna Girls School (demo)", "school", 2, None),
+    ("Metro site crew (demo)", "work", None, [("ISBT gate", 2), ("ITO crossing", 9), ("Najafgarh depot", 13)]),
+    ("Okhla delivery hub (demo)", "work", None, [("Okhla hub", 6)]),
+    ("Sector 8 RWA (demo)", "community", 1, None),
+]
+
+
+def seed_network(store, now_ts: int, days: int = 6) -> list[dict]:
+    from datetime import datetime, timedelta
+
+    from . import school
+    rng = random.Random(7)
+    names = {uid: name for uid, name, *_ in STATIONS}
+    out = []
+    for name, kind, uid, zones in NETWORK:
+        zs = [{"name": zn, "uid": zu} for zn, zu in zones] if zones else None
+        org, _ = school.register(store, name, uid or zs[0]["uid"], now_ts - days * 86400, lang="hi",
+                                 kind=kind, zones=zs, shift=(8, 18) if kind == "work" else None)
+        for i in range(days, 0, -1):
+            t = datetime.fromtimestamp(now_ts, service.IST).replace(hour=6, minute=30, second=0) - timedelta(days=i)
+            ts, date = int(t.timestamp()), t.date().isoformat()
+
+            def reading(u):
+                v = int(rng.choice([170, 215, 240, 265, 290, 320, 345]))
+                return {"uid": u, "station": names[u], "level": school.level_for(v),
+                        "basis": {"state": "fresh", "age_min": rng.randint(10, 55), "value": v}}
+            if kind == "work":
+                zd = [{"name": z["name"], **reading(z["uid"])} for z in zs]
+                worst = max(zd, key=lambda z: z["level"])
+                day = {"uid": worst["uid"], "station": worst["station"], "level": worst["level"],
+                       "basis": worst["basis"], "zones": zd}
+            else:
+                day = reading(uid)
+            day.update(date=date, decided_ts=ts, kind=kind)
+            roll = rng.random()
+            todo = school.checklist(kind, day["level"])
+            if roll < 0.62 and todo:      # opened and acted on
+                day["seen_ts"] = ts + 1200
+                day["acts"] = {a: ts + 1500 + 300 * k for k, a in enumerate(todo) if rng.random() < 0.8} or {todo[0]: ts + 1500}
+            elif roll < 0.82:             # opened, nothing marked
+                day["seen_ts"] = ts + 2400
+            store.put(f"SDAY#{org['id']}", date, day)
+        out.append(org)
+    return out

@@ -637,3 +637,12 @@ html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
 }
 @media (pointer: coarse) { .rel-list a { display: inline-flex; align-items: center; min-height: 40px; } }
 .rel-more { margin-top: 14px; height: 42px; }
+/* ---------- action ledger (record page) ---------- */
+.lg-funnel { margin: 14px 0 16px; }
+.lg-kinds { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: .92rem; }
+.lg-kinds th, .lg-kinds td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: right; }
+.lg-kinds th:first-child { text-align: left; } .lg-kinds thead th { font: 500 .76rem var(--mono); color: var(--muted); }
+.lg-kinds td { font: 500 .92rem var(--mono); }
+.lg-top { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.lg-top li { display: inline-flex; align-items: center; gap: 8px; padding: 5px 6px 5px 12px; border-radius: 99px; background: var(--bg); border: 1px solid var(--line); font-size: .86rem; }
+.lg-top b { padding: 1px 8px; border-radius: 99px; background: var(--go-bg); color: var(--go); font: 500 .78rem var(--mono); }

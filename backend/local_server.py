@@ -115,5 +115,13 @@ if __name__ == "__main__":
     else:
         STORE = demo.seed(now())
         service.morning_predictions(STORE, now())
+        # demo only: plans are decided whenever you look, so a rehearsal at night isn't empty
+        school.DECIDE_AT = (0, 0)
+        print("Demo Bad-air plan network (open a link to see that organisation):")
+        network = demo.seed_network(STORE, now())
+        school.morning(STORE, now())
+        for org in network:
+            print(f"  {org['name']:<32} http://localhost:5173/#/plan?id={org['id']}&k={org['key']}"
+                  + (f"   crew page: http://localhost:5173/#/crew?t={org['pub']}" if org["kind"] == "work" else ""))
     print(f"Taaza Hawa API on http://localhost:{a.port} ({'LIVE' if LIVE else 'DEMO synthetic data'})")
     ThreadingHTTPServer(("127.0.0.1", a.port), H).serve_forever()

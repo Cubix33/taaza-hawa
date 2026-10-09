@@ -7,15 +7,17 @@ import * as home from "./pages/home.js";
 import * as check from "./pages/check.js";
 import * as stations from "./pages/stations.js";
 import * as record from "./pages/record.js";
-import * as school from "./pages/school.js";
+import * as plan from "./pages/plan.js";
+import * as crew from "./pages/crew.js";
 import * as about from "./pages/about.js";
 
 // hash routes work on any static host (Amplify) without rewrite rules
-const PAGES = { home, check, school, stations, record, about };
+const PAGES = { home, check, plan, crew, stations, record, about }; // crew: the workers' page, not in the menus
+const ALIASES = { school: "plan", zone: "crew" }; // links from the first versions keep working
 const NAV = [
   ["home", "navHome", icon.home],
   ["check", "navCheck", icon.gauge],
-  ["school", "navSchool", icon.school],
+  ["plan", "navSchool", icon.school],
   ["stations", "navStations", icon.map],
   ["record", "navRecord", icon.record],
   ["about", "navAbout", icon.book],
@@ -24,7 +26,8 @@ const NAV = [
 const TABS = NAV.filter(([r]) => r !== "about");
 
 function parseHash() {
-  const [path, qs] = location.hash.replace(/^#\/?/, "").split("?");
+  const [raw, qs] = location.hash.replace(/^#\/?/, "").split("?");
+  const path = ALIASES[raw] || raw;
   const route = PAGES[path] ? path : "home";
   return { route, params: Object.fromEntries(new URLSearchParams(qs || "")) };
 }

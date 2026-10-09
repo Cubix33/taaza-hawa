@@ -61,6 +61,7 @@ def route(method, path, q, body, s, t, start_execution=None):
         rel = reliability.get(s, t)
         return 200, {**service.scoreboard(s, _recent_dates(t)), "now": t,
                      "recent_holds": service.recent_holds(s), "accuracy": service.accuracy(s),
+                     "ledger": school.ledger(s, t),
                      "reliability": {"window_h": rel["window_h"],
                                      "stations": sorted(rel["stations"].values(), key=lambda r: (r["pct"], r["name"]))}}
     if path == "/history" and method == "GET":
@@ -93,6 +94,9 @@ def route(method, path, q, body, s, t, start_execution=None):
         return 200, _public(hold)
     if path == "/places" and method == "GET":
         return 200, places.search(s, q.get("q", ""))
+    if path == "/zone" and method == "GET":
+        out = school.public_view(s, q.get("t", ""), t)
+        return (200, out) if out else (404, {"error": "unknown link"})
     if path.startswith("/school"):
         return _school_route(method, path, q, body, s, t)
     if path == "/hold" and method == "GET":
@@ -112,8 +116,14 @@ def _school_route(method, path, q, body, s, t):
         if not name:
             return 400, {"error": "school name must be 2 to 80 characters"}
         lang = body.get("lang") if body.get("lang") in ("hi", "en") else "hi"
-        sc, token = school.register(s, name, int(body["uid"]), t, lang, _clean_email(body.get("email")),
-                                    _clean_place(body.get("place")))
+        kind = body.get("kind") if body.get("kind") in school.KINDS else "school"
+        zones = _clean_zones(body.get("zones")) if kind == "work" else None
+        if kind == "work" and not zones:
+            return 400, {"error": "add at least one work zone"}
+        uid = zones[0]["uid"] if zones else int(body["uid"])
+        sc, token = school.register(s, name, uid, t, lang, _clean_email(body.get("email")),
+                                    _clean_place(body.get("place")), kind=kind, zones=zones,
+                                    shift=_clean_shift(body.get("shift")))
         if not sc:
             return 404, {"error": "unknown station"}
         _send_confirm(sc, token)
@@ -137,8 +147,12 @@ def _school_route(method, path, q, body, s, t):
         uid = int(body["uid"]) if body.get("uid") is not None else None
         lang = body.get("lang") if body.get("lang") in ("hi", "en") else None
         place = _clean_place(body.get("place")) if "place" in body else None
+        zones = _clean_zones(body.get("zones")) if "zones" in body else None
+        if "zones" in body and not zones:
+            return 400, {"error": "add at least one work zone"}
         sc, token = school.update(s, sc, name, uid, email, clear_email=raw == "", lang=lang,
-                                  place=place, set_place="place" in body, now_ts=t)
+                                  place=place, set_place="place" in body, now_ts=t,
+                                  zones=zones, shift=_clean_shift(body.get("shift")))
         if not sc:
             return 404, {"error": "unknown station"}
         _send_confirm(sc, token)
@@ -154,10 +168,40 @@ def _school_route(method, path, q, body, s, t):
         if not school.log_action(s, sc, body.get("date"), action, t):
             return 404, {"error": "no plan for that day"}
         return 200, _school_view(s, sc, t)
+    if path == "/school/act":
+        if not school.set_act(s, sc, body.get("date"), str(body.get("act")), bool(body.get("done")), t):
+            return 404, {"error": "no such action for that day"}
+        return 200, _school_view(s, sc, t)
     if path == "/school/delete":
         school.remove(s, sc)
         return 200, {"deleted": True}
     return 404, {"error": "not found"}
+
+
+def _clean_zones(zs):
+    """Work zones: 1-3 of {name, uid, place?}; a zone found on the map keeps its position."""
+    if not isinstance(zs, list):
+        return None
+    out = []
+    for z in zs[:school.MAX_ZONES]:
+        name = _clean_name(z.get("name")) if isinstance(z, dict) else None
+        if not name:
+            continue
+        zone = {"name": name, "uid": int(z["uid"])}
+        pl = _clean_place(z.get("place")) if z.get("place") else None
+        if pl:
+            zone["place"] = pl
+        out.append(zone)
+    return out or None
+
+
+def _clean_shift(sh):
+    """Shift hours as [start, end] in whole IST hours; anything odd falls back to the default."""
+    try:
+        a, b = int(sh[0]), int(sh[1])
+    except (TypeError, ValueError, IndexError, KeyError):
+        return None
+    return (a, b) if 0 <= a < b <= 24 else None
 
 
 def _clean_place(p):

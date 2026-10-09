@@ -1,30 +1,53 @@
-"""School mode: one plan per school day, decided at 06:30 IST, and what the school did with it.
+"""Bad-air plan: one plan per day for a participating organisation, decided at 06:30 IST, and what
+the organisation did with it. Three kinds share everything below:
 
-The plan is a fixed table on the same CPCB bands as the public answer, never model-chosen:
-  level 0  AQI 0-100    everything outside as usual
-  level 1  101-200      outside is fine; children with asthma keep PE short and light
-                        (CPCB's own note for Moderate: breathing discomfort to people with asthma)
-  level 2  201-300      assembly and PE indoors, recess short and light, children with asthma indoors
-  level 3  301+         everything indoors
-An old station number is planned on the high end of its estimate, as everywhere else.
+  school     children           assembly, PE, recess, children with asthma
+  work       outdoor workers    1-3 work zones (each read at its own nearest station), shift hours
+  community  RWA / centre       outdoor events, walking groups, older residents and people with asthma
 
-No login: a school is opened with its id plus a random key (kept on the device and in its emails).
+The level is a fixed table on the same CPCB bands as the public answer, never model-chosen:
+  level 0  AQI 0-100    normal day
+  level 1  101-200      people with asthma take care (CPCB's note for Moderate: breathing
+                        discomfort to people with asthma)
+  level 2  201-300      poor: move or cut outdoor activity
+  level 3  301+         very poor or worse: everything indoors / essential outdoor work only
+An old station number is planned on the high end of its estimate, as everywhere else. A work team
+is planned on its worst zone.
+
+Each day carries a checklist of suggested actions; an action is only "done" once someone marks it,
+with the time. Opening the day's plan records that it was seen. Nothing here measures anybody's
+inhaled dose: a station number is station air, and the plan is exposure-aware guidance.
+
+No login: an organisation is opened with its id plus a random key (kept on the device and in its
+emails). A separate public token opens the read-only "my zone today" page for a work crew.
 Morning emails go only to an address that has been confirmed from that address's inbox.
 """
 from __future__ import annotations
 
+import collections
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from . import grader, mail, places, service, smoke
 from .aqi import band_index
 from .freshness import human_age_en, human_age_hi
 from .store import Store
 
-ACTIVITIES = ("assembly", "pe", "recess", "sensitive")
+KINDS = ("school", "work", "community")
 OUT, LIMIT, IN = "out", "limit", "in"
-PLAN = {0: (OUT, OUT, OUT, OUT), 1: (OUT, OUT, OUT, LIMIT), 2: (IN, IN, LIMIT, IN), 3: (IN, IN, IN, IN)}
-ACTIONS = ("followed", "outdoor", "closed")
+ROWS = {"school": ("assembly", "pe", "recess", "sensitive"),
+        "community": ("events", "walks", "sensitive")}
+PLANS = {"school": {0: (OUT, OUT, OUT, OUT), 1: (OUT, OUT, OUT, LIMIT), 2: (IN, IN, LIMIT, IN), 3: (IN, IN, IN, IN)},
+         "community": {0: (OUT, OUT, OUT), 1: (OUT, OUT, LIMIT), 2: (IN, LIMIT, IN), 3: (IN, IN, IN)}}
+# (action, lowest level at which it is suggested)
+CHECKLIST = {"school": (("inhalers", 1), ("notify", 2), ("assembly_in", 2), ("pe_in", 2)),
+             "work": (("brief", 1), ("less_strenuous", 2), ("breaks_in", 2), ("masks", 2)),
+             "community": (("share", 2), ("pause_events", 2), ("check_neighbours", 2))}
+ACTIVITIES = ROWS["school"]
+PLAN = PLANS["school"]
+ACTIONS = ("followed", "outdoor", "closed")  # day status; "closed" = no school / no work today
+MAX_ZONES = 3
+DEFAULT_SHIFT = (8, 18)
 DECIDE_AT = service.MORNING_AT  # 06:30 IST, the same run as the public morning estimates
 SEND_UNTIL_HOUR = 10  # a late catch-up run must not email a "morning" plan at lunchtime
 HISTORY_DAYS = 30
@@ -34,48 +57,73 @@ def level_for(aqi: float) -> int:
     return {0: 0, 1: 0, 2: 1, 3: 2}.get(band_index(aqi), 3)
 
 
-def plan(level: int | None) -> dict | None:
-    return None if level is None else dict(zip(ACTIVITIES, PLAN[level]))
+def plan(level: int | None, kind: str = "school") -> dict | None:
+    if level is None or kind not in PLANS:
+        return None
+    return dict(zip(ROWS[kind], PLANS[kind][level]))
 
 
-# ---------- the school record ----------
+def checklist(kind: str, level: int | None) -> list[str]:
+    return [] if level is None else [a for a, lo in CHECKLIST[kind] if level >= lo]
+
+
+# ---------- the organisation record ----------
 
 def register(store: Store, name: str, uid: int, now_ts: int, lang: str = "hi",
-             email: str | None = None, place: dict | None = None) -> tuple[dict | None, str | None]:
-    """Returns (school, confirm_token). confirm_token is set when an email still needs confirming.
-    place: {lat, lon, address} when the school was found on the map (shows the distance to its station)."""
-    if not store.get("STATION", str(uid)):
+             email: str | None = None, place: dict | None = None, kind: str = "school",
+             zones: list[dict] | None = None, shift: tuple[int, int] | None = None) -> tuple[dict | None, str | None]:
+    """Returns (org, confirm_token). confirm_token is set when an email still needs confirming.
+    place: {lat, lon, address} when found on the map. zones (work teams): [{name, uid, place?}]."""
+    if kind == "work":
+        if not zones or not all(store.get("STATION", str(z["uid"])) for z in zones):
+            return None, None
+        uid = zones[0]["uid"]
+    elif not store.get("STATION", str(uid)):
         return None, None
     sid = secrets.token_hex(5)
-    school = {"id": sid, "key": secrets.token_urlsafe(18), "name": name, "uid": uid,
-              "lang": lang, "created_ts": now_ts}
-    if place:
-        school["place"] = place
-    token = _set_email(school, email)
-    store.put("SCHOOL", sid, school)
-    return school, token
+    org = {"id": sid, "key": secrets.token_urlsafe(18), "pub": secrets.token_urlsafe(9), "kind": kind,
+           "name": name, "uid": uid, "lang": lang, "created_ts": now_ts}
+    if kind == "work":
+        org["zones"] = zones[:MAX_ZONES]
+        org["shift"] = list(shift or DEFAULT_SHIFT)
+    if place and kind != "work":
+        org["place"] = place
+    token = _set_email(org, email)
+    store.put("SCHOOL", sid, org)
+    store.put("PUB", org["pub"], {"id": sid})
+    return org, token
 
 
 def authorize(store: Store, sid: str, key: str) -> dict | None:
-    school = store.get("SCHOOL", str(sid or ""))
-    if not school or not secrets.compare_digest(school["key"], str(key or "")):
+    org = store.get("SCHOOL", str(sid or ""))
+    if not org or not secrets.compare_digest(org["key"], str(key or "")):
         return None
-    return school
+    return org
 
 
 def update(store: Store, school: dict, name: str | None = None, uid: int | None = None,
            email: str | None = None, clear_email: bool = False, lang: str | None = None,
-           place: dict | None = None, set_place: bool = False,
-           now_ts: int | None = None) -> tuple[dict | None, str | None]:
-    """Change school (name, station, map position), email language or contact.
-    A new address must be confirmed again. A new station discards today's plan, so it is made again
-    for that station; set_place=True with place=None forgets the map position."""
-    if uid is not None:
+           place: dict | None = None, set_place: bool = False, now_ts: int | None = None,
+           zones: list[dict] | None = None, shift: tuple[int, int] | None = None) -> tuple[dict | None, str | None]:
+    """Change name, station / zones, map position, shift, email language or contact.
+    A new address must be confirmed again. A new station or new zones discard today's plan, so it is
+    made again; set_place=True with place=None forgets the map position."""
+    replan = False
+    if zones is not None and school.get("kind") == "work":
+        if not zones or not all(store.get("STATION", str(z["uid"])) for z in zones):
+            return None, None
+        replan = [z["uid"] for z in zones] != [z["uid"] for z in school.get("zones", [])]
+        school["zones"] = zones[:MAX_ZONES]
+        school["uid"] = zones[0]["uid"]
+    elif uid is not None:
         if not store.get("STATION", str(uid)):
             return None, None
-        if uid != school["uid"] and now_ts is not None:
-            store.delete(f"SDAY#{school['id']}", service.ist_date(now_ts))
+        replan = uid != school["uid"]
         school["uid"] = uid
+    if replan and now_ts is not None:
+        store.delete(f"SDAY#{school['id']}", service.ist_date(now_ts))
+    if shift and school.get("kind") == "work":
+        school["shift"] = list(shift)
     if set_place:
         if place:
             school["place"] = place
@@ -116,6 +164,8 @@ def confirm_email(store: Store, school: dict, token: str) -> bool:
 def remove(store: Store, school: dict) -> None:
     for d in store.query(f"SDAY#{school['id']}"):
         store.delete(d["pk"], d["sk"])
+    if school.get("pub"):
+        store.delete("PUB", school["pub"])
     store.delete("SCHOOL", school["id"])
 
 
@@ -126,6 +176,19 @@ def _decided_yet(now_ts: int) -> bool:
     return (t.hour, t.minute) >= DECIDE_AT
 
 
+def _reading(store: Store, uid: int, now_ts: int) -> dict | None:
+    """Level and basis at one station, from the same card the public sees."""
+    card = service.build_card(store, uid, now_ts)
+    if not card:
+        return None
+    iv = card.get("interval")
+    v = iv["hi"] if iv else card.get("value")
+    return {"uid": card["uid"], "station": card["name"], "level": None if v is None else level_for(v),
+            "basis": {"state": card["state"], "age_min": card.get("age_min"), "value": card.get("value"),
+                      "lo": iv["lo"] if iv else None, "hi": iv["hi"] if iv else None,
+                      "n_neighbours": iv["n_neighbours"] if iv else None}}
+
+
 def ensure_day(store: Store, school: dict, now_ts: int) -> dict | None:
     """Today's plan, decided once (at 06:30, or at sign-up if that is later) and then kept."""
     if not _decided_yet(now_ts):
@@ -134,16 +197,25 @@ def ensure_day(store: Store, school: dict, now_ts: int) -> dict | None:
     day = store.get(f"SDAY#{school['id']}", date)
     if day:
         return day
-    card = service.build_card(store, school["uid"], now_ts)
-    if not card:
-        return None
-    iv = card.get("interval")
-    v = iv["hi"] if iv else card.get("value")
-    day = {"date": date, "uid": card["uid"], "station": card["name"], "decided_ts": now_ts,
-           "level": None if v is None else level_for(v),
-           "basis": {"state": card["state"], "age_min": card.get("age_min"), "value": card.get("value"),
-                     "lo": iv["lo"] if iv else None, "hi": iv["hi"] if iv else None,
-                     "n_neighbours": iv["n_neighbours"] if iv else None}}
+    kind = school.get("kind", "school")
+    if kind == "work":
+        zones = []
+        for z in school.get("zones", []):
+            r = _reading(store, z["uid"], now_ts)
+            if r:
+                zones.append({"name": z["name"], **r})
+        if not zones:
+            return None
+        worst = max(zones, key=lambda z: -1 if z["level"] is None else z["level"])
+        day = {"date": date, "uid": worst["uid"], "station": worst["station"], "decided_ts": now_ts,
+               "level": worst["level"], "basis": worst["basis"], "zones": zones}
+    else:
+        r = _reading(store, school["uid"], now_ts)
+        if not r:
+            return None
+        day = {"date": date, "uid": r["uid"], "station": r["station"], "decided_ts": now_ts,
+               "level": r["level"], "basis": r["basis"]}
+    day["kind"] = kind
     fires = smoke.current(store, now_ts)  # the context as it stood when the plan was made
     if fires:
         day["fires"] = {k: fires.get(k) for k in ("total", "upwind", "wind_from", "window_h", "radius_km")}
@@ -152,6 +224,7 @@ def ensure_day(store: Store, school: dict, now_ts: int) -> dict | None:
 
 
 def log_action(store: Store, school: dict, date: str, action: str | None, now_ts: int) -> dict | None:
+    """The day's status: "closed" (no school / no work today), or the older one-tap answers."""
     day = store.get(f"SDAY#{school['id']}", str(date))
     if not day:
         return None
@@ -163,8 +236,24 @@ def log_action(store: Store, school: dict, date: str, action: str | None, now_ts
     return day
 
 
+def set_act(store: Store, school: dict, date: str, act: str, done: bool, now_ts: int) -> dict | None:
+    """Mark one checklist action done (with the time) or not done."""
+    day = store.get(f"SDAY#{school['id']}", str(date))
+    if not day or act not in {a for a, _ in CHECKLIST[school.get("kind", "school")]}:
+        return None
+    acts = dict(day.get("acts") or {})
+    if done:
+        acts.setdefault(act, now_ts)
+    else:
+        acts.pop(act, None)
+    day["acts"] = acts
+    day.setdefault("seen_ts", now_ts)
+    store.put(day["pk"], day["sk"], day)
+    return day
+
+
 def morning(store: Store, now_ts: int, send=None) -> dict:
-    """06:30 job (and the poller's catch-up): decide every school's day, email confirmed contacts."""
+    """06:30 job (and the poller's catch-up): decide every organisation's day, email confirmed contacts."""
     if not _decided_yet(now_ts):
         return {"days": 0, "emailed": 0}
     late = datetime.fromtimestamp(now_ts, service.IST).hour >= SEND_UNTIL_HOUR
@@ -178,7 +267,7 @@ def morning(store: Store, now_ts: int, send=None) -> dict:
             try:
                 send(school, day)
             except Exception as e:  # one bad address must not stop the others
-                print("school email skipped:", school["id"], repr(e))
+                print("plan email skipped:", school["id"], repr(e))
                 continue
             day["emailed"] = True
             store.put(day["pk"], day["sk"], day)
@@ -186,7 +275,7 @@ def morning(store: Store, now_ts: int, send=None) -> dict:
     return {"days": days, "emailed": emailed}
 
 
-# ---------- what the page sees ----------
+# ---------- what the pages see ----------
 
 def _grade(store: Store, day: dict) -> dict | None:
     """An estimate-based plan is graded by the same morning promise on the public record,
@@ -200,21 +289,33 @@ def _grade(store: Store, day: dict) -> dict | None:
             "miss_by": pred.get("miss_by", 0)}
 
 
-def _public_day(store: Store, d: dict) -> dict:
-    keep = ("date", "uid", "station", "decided_ts", "level", "action", "emailed")
+def _basis(b: dict) -> dict:
+    return {k: b.get(k) for k in ("state", "age_min", "value", "lo", "hi", "n_neighbours")}
+
+
+def _public_day(store: Store, d: dict, kind: str) -> dict:
+    keep = ("date", "uid", "station", "decided_ts", "level", "action", "emailed", "seen_ts")
     out = {k: d.get(k) for k in keep}
-    b = d["basis"]
-    out["basis"] = {k: b.get(k) for k in ("state", "age_min", "value", "lo", "hi", "n_neighbours")}
-    out["plan"] = plan(d.get("level"))
+    out["basis"] = _basis(d["basis"])
+    out["plan"] = plan(d.get("level"), kind)
+    out["todo"] = checklist(kind, d.get("level"))
+    out["acts"] = d.get("acts") or {}
+    out["zones"] = [{"name": z["name"], "uid": z["uid"], "station": z["station"], "level": z.get("level"),
+                     "basis": _basis(z["basis"])} for z in d.get("zones", [])] or None
     out["fires"] = d.get("fires")
     out["grade"] = _grade(store, d)
     return out
 
 
+def _acted(d: dict) -> bool:
+    return bool(d.get("acts")) or d.get("action") == "followed"
+
+
 def summary(days: list[dict]) -> dict:
-    bad = [d for d in days if (d.get("level") or 0) >= 2]
+    bad = [d for d in days if (d.get("level") or 0) >= 2 and d.get("action") != "closed"]
     graded = [d["grade"] for d in days if d.get("grade") and d["grade"]["status"] in (grader.HIT, grader.MISSED)]
     return {"days": len(days), "bad_days": len(bad),
+            "acted": sum(_acted(d) for d in bad),
             "followed": sum(d.get("action") == "followed" for d in bad),
             "outdoor": sum(d.get("action") == "outdoor" for d in bad),
             "est_graded": len(graded), "est_hits": sum(g["status"] == grader.HIT for g in graded)}
@@ -225,17 +326,36 @@ def _mask(email: str) -> str:
     return f"{name[:2]}…@{domain}"
 
 
+def _zones_view(store: Store, school: dict) -> list[dict] | None:
+    if school.get("kind") != "work":
+        return None
+    out = []
+    for z in school.get("zones", []):
+        meta = store.get("STATION", str(z["uid"])) or {}
+        pl = z.get("place")
+        out.append({"name": z["name"], "uid": z["uid"], "station": meta.get("name"), "place": pl,
+                    "station_km": round(places.km(pl["lat"], pl["lon"], meta["lat"], meta["lon"]), 1) if pl and meta else None})
+    return out
+
+
 def view(store: Store, school: dict, now_ts: int) -> dict:
-    ensure_day(store, school, now_ts)
+    today_day = ensure_day(store, school, now_ts)
+    if today_day and not today_day.get("seen_ts"):  # the plan was opened: acknowledged
+        today_day["seen_ts"] = now_ts
+        store.put(today_day["pk"], today_day["sk"], today_day)
+    kind = school.get("kind", "school")
     meta = store.get("STATION", str(school["uid"])) or {}
     pl = school.get("place")
     dist = round(places.km(pl["lat"], pl["lon"], meta["lat"], meta["lon"]), 1) if pl and meta else None
-    days = [_public_day(store, d) for d in store.query(f"SDAY#{school['id']}", limit=HISTORY_DAYS, reverse=True)]
+    days = [_public_day(store, d, kind) for d in store.query(f"SDAY#{school['id']}", limit=HISTORY_DAYS, reverse=True)]
     today = service.ist_date(now_ts)
-    return {"school": {"id": school["id"], "name": school["name"], "uid": school["uid"],
+    shift = school.get("shift")
+    return {"school": {"id": school["id"], "kind": kind, "name": school["name"], "uid": school["uid"],
                        "station": meta.get("name"), "station_km": dist, "place": pl,
                        "address": pl.get("address") if pl else None, "lang": school.get("lang", "hi"),
-                       "created_ts": school["created_ts"],
+                       "created_ts": school["created_ts"], "pub": school.get("pub"),
+                       "zones": _zones_view(store, school),
+                       "shift": shift, "shift_h": (shift[1] - shift[0]) if shift else None,
                        "email_hint": _mask(school["email"]) if school.get("email") else None,
                        "email_confirmed": bool(school.get("email_confirmed"))},
             "today": next((d for d in days if d["date"] == today), None),
@@ -243,40 +363,126 @@ def view(store: Store, school: dict, now_ts: int) -> dict:
             "decides_at": "%02d:%02d" % DECIDE_AT}
 
 
-# ---------- emails (plain text, the school's language) ----------
+def public_view(store: Store, pub: str, now_ts: int) -> dict | None:
+    """The crew's read-only page: today's zones, levels and shift. No key, no contact details."""
+    ptr = store.get("PUB", str(pub or ""))
+    org = store.get("SCHOOL", ptr["id"]) if ptr else None
+    if not org:
+        return None
+    kind = org.get("kind", "school")
+    day = ensure_day(store, org, now_ts)
+    shift = org.get("shift")
+    return {"name": org["name"], "kind": kind, "shift": shift, "shift_h": (shift[1] - shift[0]) if shift else None,
+            "today": _public_day(store, day, kind) if day else None, "decides_at": "%02d:%02d" % DECIDE_AT,
+            "now": now_ts}
+
+
+def ledger(store: Store, now_ts: int, days: int = HISTORY_DAYS) -> dict:
+    """The second public record: on poor-or-worse mornings, did the warning lead to action?
+    Counts organisation-mornings across participating organisations only; never names them."""
+    since = (datetime.fromtimestamp(now_ts, service.IST).date() - timedelta(days=days - 1)).isoformat()
+    blank = {"warned": 0, "seen": 0, "acted": 0, "no_response": 0}
+    by_kind = {k: dict(blank) for k in KINDS}
+    acts = collections.Counter()
+    orgs = collections.Counter()
+    for org in store.query("SCHOOL"):
+        kind = org.get("kind", "school")
+        orgs[kind] += 1
+        for d in store.query(f"SDAY#{org['id']}"):
+            if d["date"] < since or (d.get("level") or 0) < 2 or d.get("action") == "closed":
+                continue
+            acted = _acted(d)
+            seen = acted or bool(d.get("seen_ts")) or bool(d.get("action"))
+            b = by_kind[kind]
+            b["warned"] += 1
+            b["seen"] += seen
+            b["acted"] += acted
+            b["no_response"] += not seen
+            acts.update((d.get("acts") or {}).keys())
+    total = {k: sum(b[k] for b in by_kind.values()) for k in blank}
+    return {"days": days, "orgs": dict(orgs), "total": total, "by_kind": by_kind,
+            "top_actions": [{"act": a, "n": n} for a, n in acts.most_common(5)]}
+
+
+# ---------- emails (plain text, the organisation's language) ----------
 
 COPY = {
     "en": {
         "rows": {"assembly": "Morning assembly", "pe": "PE and sports", "recess": "Recess",
-                 "sensitive": "Children with asthma or breathing trouble"},
+                 "sensitive": "Children with asthma or breathing trouble",
+                 "events": "Outdoor events", "walks": "Walking and yoga groups"},
+        "rows_community": {"sensitive": "Older residents and people with asthma"},
         "status": {OUT: "Outside", LIMIT: "Short and light", IN: "Indoors"},
-        "head": {0: "A normal day: activities can be outside.",
-                 1: "Outside is fine. Keep PE short and light for children with asthma.",
-                 2: "Move assembly and PE indoors today.",
-                 3: "Keep every activity indoors today.",
-                 None: "No reliable air number this morning. Check a nearby station before deciding."},
-        "log": "Tell us what the school did today (one tap):",
-        "foot": "Station air, not your playground. When the number is old, the range is an estimate, not the truth.",
+        "head": {"school": {0: "A normal day: activities can be outside.",
+                            1: "Outside is fine. Keep PE short and light for children with asthma.",
+                            2: "Move assembly and PE indoors today.",
+                            3: "Keep every activity indoors today."},
+                 "work": {0: "A normal day for outdoor work.",
+                          1: "Work can go on. Workers with asthma or heart conditions: lighter tasks.",
+                          2: "Poor air in your zones: cut strenuous outdoor work and give indoor breaks.",
+                          3: "Very poor air: strenuous outdoor work only if essential, with frequent indoor breaks."},
+                 "community": {0: "A normal day.",
+                               1: "Outdoor plans can go on. Older residents and people with asthma: take it easy.",
+                               2: "Pause outdoor events today and keep walks short.",
+                               3: "Keep everyone's activities indoors today."}},
+        "none": "No reliable air number this morning. Check a nearby station before deciding.",
+        "level": {0: "Good or Satisfactory", 1: "Moderate", 2: "Poor", 3: "Very poor or worse", None: "No reliable number"},
+        "todo_t": "Today's checklist:",
+        "todo": {"inhalers": "Check children with asthma have their inhalers",
+                 "notify": "Tell parents before they leave home", "assembly_in": "Hold assembly indoors",
+                 "pe_in": "Move PE indoors", "brief": "Brief the crew on today's air",
+                 "less_strenuous": "Cut strenuous outdoor work where possible",
+                 "breaks_in": "Give breaks indoors", "masks": "Hand out well-fitting masks if available",
+                 "share": "Share this warning on the residents' group", "pause_events": "Pause outdoor events",
+                 "check_neighbours": "Check on older and vulnerable neighbours"},
+        "outside": "Your crew will be outside about {h} h today.",
+        "log": "Open today's plan and mark what was done:",
+        "foot": "Station air, not your exact location, and not anyone's measured dose. When the number is old, the range is an estimate.",
         "confirm_subject": "Confirm morning air emails for {name}",
-        "confirm_body": "Taaza Hawa will email the day's assembly and PE plan for {name} at 06:30 on school days.\n\n"
+        "confirm_body": "Taaza Hawa will email the day's bad-air plan for {name} at 06:30.\n\n"
                         "Confirm this address:\n{link}\n\nIf you did not ask for this, ignore this email; nothing will be sent.",
     },
     "hi": {
         "rows": {"assembly": "सुबह की प्रार्थना सभा", "pe": "PE और खेल", "recess": "आधी छुट्टी (रिसेस)",
-                 "sensitive": "अस्थमा या साँस की तकलीफ़ वाले बच्चे"},
+                 "sensitive": "अस्थमा या साँस की तकलीफ़ वाले बच्चे",
+                 "events": "बाहर के कार्यक्रम", "walks": "सैर और योग के समूह"},
+        "rows_community": {"sensitive": "बुज़ुर्ग और अस्थमा वाले लोग"},
         "status": {OUT: "बाहर", LIMIT: "थोड़ी देर, हल्का", IN: "अंदर"},
-        "head": {0: "सामान्य दिन: गतिविधियाँ बाहर हो सकती हैं।",
-                 1: "बाहर ठीक है। अस्थमा वाले बच्चों का PE छोटा और हल्का रखें।",
-                 2: "आज प्रार्थना सभा और PE अंदर कराएँ।",
-                 3: "आज सारी गतिविधियाँ अंदर रखें।",
-                 None: "आज सुबह हवा का भरोसेमंद नंबर नहीं मिला। फ़ैसले से पहले पास का स्टेशन देखें।"},
-        "log": "बताइए आज स्कूल ने क्या किया (एक टैप):",
-        "foot": "यह स्टेशन की हवा है, आपके मैदान की नहीं। नंबर पुराना हो तो दायरा एक अंदाज़ा है, पक्का सच नहीं।",
+        "head": {"school": {0: "सामान्य दिन: गतिविधियाँ बाहर हो सकती हैं।",
+                            1: "बाहर ठीक है। अस्थमा वाले बच्चों का PE छोटा और हल्का रखें।",
+                            2: "आज प्रार्थना सभा और PE अंदर कराएँ।",
+                            3: "आज सारी गतिविधियाँ अंदर रखें।"},
+                 "work": {0: "बाहर के काम के लिए सामान्य दिन।",
+                          1: "काम चल सकता है। अस्थमा या दिल की तकलीफ़ वाले कामगारों को हल्का काम दें।",
+                          2: "आपके इलाक़ों में खराब हवा: भारी बाहरी काम कम करें, आराम अंदर कराएँ।",
+                          3: "बहुत खराब हवा: भारी बाहरी काम सिर्फ़ ज़रूरी हो तो, और बार-बार अंदर आराम।"},
+                 "community": {0: "सामान्य दिन।",
+                               1: "बाहर के कार्यक्रम हो सकते हैं। बुज़ुर्ग और अस्थमा वाले लोग ध्यान रखें।",
+                               2: "आज बाहर के कार्यक्रम रोकें और सैर छोटी रखें।",
+                               3: "आज सबकी गतिविधियाँ अंदर रखें।"}},
+        "none": "आज सुबह हवा का भरोसेमंद नंबर नहीं मिला। फ़ैसले से पहले पास का स्टेशन देखें।",
+        "level": {0: "अच्छी या संतोषजनक", 1: "मध्यम", 2: "खराब", 3: "बहुत खराब या उससे बदतर", None: "भरोसेमंद नंबर नहीं"},
+        "todo_t": "आज की सूची:",
+        "todo": {"inhalers": "अस्थमा वाले बच्चों के इन्हेलर देख लें",
+                 "notify": "माता-पिता को घर से निकलने से पहले बताएँ", "assembly_in": "प्रार्थना सभा अंदर कराएँ",
+                 "pe_in": "PE अंदर कराएँ", "brief": "टीम को आज की हवा के बारे में बताएँ",
+                 "less_strenuous": "जहाँ हो सके भारी बाहरी काम कम करें",
+                 "breaks_in": "आराम अंदर कराएँ", "masks": "उपलब्ध हों तो ठीक से फ़िट होने वाले मास्क दें",
+                 "share": "यह चेतावनी निवासियों के समूह पर भेजें", "pause_events": "बाहर के कार्यक्रम रोकें",
+                 "check_neighbours": "बुज़ुर्ग और कमज़ोर पड़ोसियों का हाल पूछें"},
+        "outside": "आपकी टीम आज लगभग {h} घंटे बाहर रहेगी।",
+        "log": "आज का प्लान खोलें और जो किया उसे दर्ज करें:",
+        "foot": "यह स्टेशन की हवा है, आपकी सटीक जगह की नहीं, और किसी के शरीर में गई हवा का माप नहीं। नंबर पुराना हो तो दायरा एक अंदाज़ा है।",
         "confirm_subject": "{name} के लिए सुबह की हवा वाले ईमेल की पुष्टि करें",
-        "confirm_body": "ताज़ा हवा स्कूल के दिनों में सुबह 06:30 बजे {name} के लिए प्रार्थना सभा और PE का प्लान ईमेल करेगी।\n\n"
+        "confirm_body": "ताज़ा हवा सुबह 06:30 बजे {name} के लिए खराब हवा की योजना ईमेल करेगी।\n\n"
                         "यह पता पक्का करें:\n{link}\n\nअगर आपने यह नहीं माँगा, तो इस ईमेल को छोड़ दें; कुछ नहीं भेजा जाएगा।",
     },
 }
+
+
+def head_text(kind: str, level: int | None, lang: str) -> str:
+    c = COPY[lang]
+    return c["none"] if level is None else c["head"][kind][level]
 
 
 def basis_line(day: dict, lang: str) -> str:
@@ -318,17 +524,27 @@ def fire_line(f: dict, lang: str) -> str:
 
 
 def plan_text(school: dict, day: dict) -> tuple[str, str]:
-    lang = school.get("lang", "hi")
+    lang, kind = school.get("lang", "hi"), school.get("kind", "school")
     c = COPY[lang]
-    head = c["head"][day.get("level")]
+    head = head_text(kind, day.get("level"), lang)
     lines = [f"Taaza Hawa · {school['name']} · {day['date']}", "", head, ""]
-    p = plan(day.get("level"))
+    p = plan(day.get("level"), kind)
     if p:
-        lines += [f"{c['rows'][a]}: {c['status'][p[a]]}" for a in ACTIVITIES] + [""]
-    lines.append(basis_line(day, lang))
+        names = {**c["rows"], **(c["rows_community"] if kind == "community" else {})}
+        lines += [f"{names[a]}: {c['status'][p[a]]}" for a in ROWS[kind]] + [""]
+    for z in day.get("zones") or []:
+        lines.append(f"{z['name']}: {c['level'][z.get('level')]}")
+        lines.append("  " + basis_line(z, lang))
+    if kind == "work" and school.get("shift"):
+        lines += ["", c["outside"].format(h=school["shift"][1] - school["shift"][0])]
+    todo = checklist(kind, day.get("level"))
+    if todo:
+        lines += ["", c["todo_t"]] + [f"- {c['todo'][a]}" for a in todo]
+    if kind != "work":
+        lines += ["", basis_line(day, lang)]
     if day.get("fires"):
         lines.append(fire_line(day["fires"], lang))
-    link = mail.site_link(f"school?id={school['id']}&k={school['key']}")
+    link = mail.site_link(f"plan?id={school['id']}&k={school['key']}")
     if link:
         lines += ["", c["log"], link]
     lines += ["", c["foot"]]
@@ -342,6 +558,6 @@ def send_morning(school: dict, day: dict) -> None:
 
 def send_confirm(school: dict, token: str) -> None:
     c = COPY[school.get("lang", "hi")]
-    link = mail.site_link(f"school?id={school['id']}&k={school['key']}&confirm={token}")
+    link = mail.site_link(f"plan?id={school['id']}&k={school['key']}&confirm={token}")
     mail.send(school["email"], c["confirm_subject"].format(name=school["name"]),
               c["confirm_body"].format(name=school["name"], link=link or "(link unavailable)"))

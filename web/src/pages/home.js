@@ -3,7 +3,7 @@ import { t, hi } from "../lib/i18n.js";
 import { esc, ageText, isOld, icon, median, bandName, stationMap, ageChart } from "../lib/ui.js";
 import { run, loadCard, loadBoard } from "../lib/actions.js";
 import { sky } from "../lib/sky.js";
-import { planRows } from "./school.js";
+import { planRows } from "./plan.js";
 
 export function load() {
   return run(loadCard, loadBoard);
@@ -51,7 +51,7 @@ export function view() {
       <p class="eyebrow">${t("homeSchool")[0]}</p>
       <h2 class="sec-title">${t("homeSchool")[1]}</h2>
       <p class="lead">${t("homeSchool")[2]}</p>
-      <a class="btn ink" href="#/school">${t("homeSchoolCta")} ${icon.arrow}</a>
+      <a class="btn ink" href="#/plan">${t("homeSchoolCta")} ${icon.arrow}</a>
     </div>
     <div class="hero-card sc-today sc-ex lv-2" aria-label="${esc(t("scExample"))}">
       <p class="q">${t("scExample")}</p>

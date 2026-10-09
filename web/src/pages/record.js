@@ -55,6 +55,7 @@ export function view() {
       ${b.poll ? `<p class="muted small rs-poll">${t("feedAge")}: ${since(b.poll.at)} ${t("ago")}</p>` : ""}
     </section>
     ${accuracyView(b.accuracy)}
+    ${example ? "" : actionLedger(real.ledger)}
     ${example ? "" : reliabilityView(real.reliability)}
     ${b.participation ? `<p class="cpcb"><b>CPCB</b> ${esc(b.participation.line)}</p>` : ""}
     <div class="rec-cols">
@@ -93,6 +94,27 @@ function accuracyView(acc) {
       <a href="#/check?s=${s.uid}">${esc(s.name)}</a>
       <span class="acc-mini"><i style="width:${pct(s.hits, s.graded || 1)}%"></i><em style="left:80%"></em></span>
       <b>${s.graded < FEW ? "—" : `${pct(s.hits, s.graded)}%`}</b><small>${t("accN", s.graded)}${s.unverified ? ` (+${s.unverified} ${t("accUnv")})` : ""}</small></li>`).join("")}</ul>` : ""}
+  </section>`;
+}
+
+// "Did the warnings lead to action?": the second record. Organisation-mornings with poor-or-worse
+// air across participating organisations: warned -> opened -> acted, and who stayed silent. No names.
+const KINDS = ["school", "work", "community"];
+function actionLedger(lg) {
+  if (!lg) return "";
+  const tot = lg.total, n = Object.values(lg.orgs || {}).reduce((a, b) => a + b, 0);
+  const pct = (x) => (tot.warned ? `${Math.round((x / tot.warned) * 100)}%` : "");
+  const head = `<h2 class="h2s">${t("ldTitle")}</h2><p class="muted acc-lead">${t("ldLead", lg.days)}</p>`;
+  if (!tot.warned) return `<section class="panel acc lg">${head}<p class="muted">${t("ldNone")}</p><p class="muted small">${t("ldOrgs", n)} · ${t("ldNote")}</p></section>`;
+  const cell = (k, v, cls, p) => `<div class="${cls}"><b>${v}</b><span>${t(k)}${p ? ` · ${p}` : ""}</span></div>`;
+  return `<section class="panel acc lg">${head}
+    <div class="tally lg-funnel">
+      ${cell("ldWarned", tot.warned, "", "")}${cell("ldSeen", tot.seen, "", pct(tot.seen))}${cell("ldActed", tot.acted, "t-hit", pct(tot.acted))}${cell("ldSilent", tot.no_response, "t-miss", pct(tot.no_response))}
+    </div>
+    <table class="lg-kinds"><thead><tr><th></th><th>${t("ldWarned")}</th><th>${t("ldSeen")}</th><th>${t("ldActed")}</th><th>${t("ldSilent")}</th></tr></thead>
+      <tbody>${KINDS.filter((k) => lg.by_kind[k]?.warned).map((k) => { const b = lg.by_kind[k]; return `<tr><th>${t("scKinds")[k][0]}</th><td>${b.warned}</td><td>${b.seen}</td><td>${b.acted}</td><td>${b.no_response}</td></tr>`; }).join("")}</tbody></table>
+    ${lg.top_actions?.length ? `<p class="acc-per">${t("ldTop")}</p><ul class="lg-top">${lg.top_actions.map((a) => `<li>${esc(t("scTodo")[a.act] || a.act)}<b>${a.n}</b></li>`).join("")}</ul>` : ""}
+    <p class="muted small">${t("ldOrgs", n)} · ${t("ldUnit")} · ${t("ldNote")}</p>
   </section>`;
 }
 
