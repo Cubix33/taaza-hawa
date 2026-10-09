@@ -153,3 +153,29 @@ def test_accuracy_counts_only_graded_promises():
     acc = service.accuracy(s)
     assert (acc["hits"], acc["graded"], acc["unverified"]) == (1, 2, 1) and acc["target"] == 0.8
     assert {r["uid"]: (r["hits"], r["graded"], r.get("unverified", 0)) for r in acc["stations"]} == {1: (1, 1, 0), 4: (0, 1, 0), 2: (0, 0, 1)}
+
+
+def test_accuracy_says_how_many_checks_used_warming_up_ranges_and_how_wide_they_were():
+    s = MemoryStore()
+    cams = seed(s)
+    stale = service.create_hold(s, 1, NOW)  # Dwarka, 31 h old
+    fresh = service.create_hold(s, 4, NOW)  # Punjabi Bagh, 5 min old
+    service.ingest(s, [rd(1, "Dwarka Sector 8", 28.5710, 77.0720, NOW + 900, 200),
+                       rd(4, "Punjabi Bagh", 28.6700, 77.1300, NOW + 900, 210)], cams, NOW + 1000)
+    # uncalibrated placeholder band: +-45, widened by 5*sqrt(age in hours) on each side
+    expected = (2 * (45 + 5 * 31 ** 0.5) + 2 * (45 + 5 * (5 / 60) ** 0.5)) / 2
+    acc = service.accuracy(s)
+    assert acc["graded"] == 2 and acc["warming"] == 2
+    assert acc["mean_width"] == round(expected)
+
+    item = s.get("PRED#4", f"HOLD#{fresh['id']}")
+    item["calibrated"] = True
+    s.put("PRED#4", f"HOLD#{fresh['id']}", item)
+    assert service.accuracy(s)["warming"] == 1
+
+
+def test_accuracy_with_nothing_graded_has_no_width():
+    s = MemoryStore()
+    seed(s)
+    acc = service.accuracy(s)
+    assert (acc["graded"], acc["warming"], acc["mean_width"]) == (0, 0, None)
