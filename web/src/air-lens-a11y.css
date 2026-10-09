@@ -1,0 +1,40 @@
+/* Air Lens accessibility polish (WCAG 2.2 AA). Small overrides only; the look stays the same. */
+
+/* 1.4.3 Contrast: --muted measured 4.21:1 on the cream page and 3.87:1 on a selected row;
+   stale ochre text 4.06:1. Slightly darker tones reach 4.8:1 or more (light scheme only). */
+@media (prefers-color-scheme: light) { .lens-page { --muted: #6b675e; --ochre: #9c5416; } }
+
+/* 1.4.11 + 2.4.7: the shared ring (55% brand blue) was 2.2:1 on the page. */
+.lens-page :focus-visible { outline-color: var(--lens-accent); }
+/* Day map: the pale ring was 1.04:1 on the light basemap. */
+.lens-stage.day button:focus-visible { outline-color: #1f4a43; }
+/* The map canvas ring sat outside the clipped stage, so it never showed. Draw it inside. */
+.lens-stage .maplibregl-canvas:focus-visible { outline: 2px solid #c9e7d0; outline-offset: -6px; border-radius: 0; }
+.lens-stage.day .maplibregl-canvas:focus-visible { outline-color: #1f4a43; }
+
+/* 1.4.11: selected states were near 1.1:1 (6% row tint, cream-on-cream chips, pale chip on the Day map). */
+.lens-station-row.selected, .lens-nearby-row.selected { box-shadow: inset 3px 0 0 var(--lens-accent); }
+.lens-pollutants button.active, .lens-filter-row button.active { border-color: var(--muted); }
+.lens-stage.day .lens-scene-theme button.active, .lens-stage.day .lens-camera-controls button.active, .lens-stage.day .lens-map-tools .active { background: #224b43; color: #f5f2df; }
+
+/* 2.4.11 + taps: station markers (z-index 1-3) painted over the camera and theme controls and caught their taps. */
+.lens-scene-top, .lens-camera-controls, .lens-map-tools, .lens-scene-bottom, .lens-tile-notice, .lens-pin-prompt { z-index: 4; }
+
+/* 2.4.1 / keyboard: 24 map markers came before the map controls in tab order. */
+.lens-skip { position: absolute; z-index: 7; top: 14px; left: 50%; transform: translate(-50%, -180%); padding: 8px 14px; border-radius: 6px; border: 1px solid var(--map-line); background: var(--map-panel); color: var(--map-ink); font: 500 12px var(--sans); }
+.lens-skip:focus { transform: translate(-50%, 0); }
+
+/* 2.4.11 Focus Not Obscured: keep focused controls clear of the sticky top bar and the phone tab bar. */
+html:has(.lens-page) { scroll-padding-top: 84px; }
+
+/* 2.5.8 Target Size: the checkbox label was 19px tall, the search field 23px. */
+.lens-evidence-toggle, .lens-search input { min-height: 24px; }
+
+@media (max-width: 760px) {
+  html:has(.lens-page) { scroll-padding-block: 76px 96px; }
+  /* Thumb-sized toggles, matching the other phone controls (36–40px). */
+  .lens-pollutants button { min-height: 36px; padding-inline: 12px; }
+  .lens-evidence-toggle { min-height: 40px; }
+  /* Long station names on a selected marker ran past the map edge and were cut off. */
+  .lens-marker-name { width: max-content; max-width: 220px; white-space: normal; text-align: center; line-height: 1.3; }
+}

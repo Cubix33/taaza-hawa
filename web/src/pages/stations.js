@@ -1,4 +1,6 @@
 import '../air-lens.css';
+import '../air-lens-nearby.css';
+import '../air-lens-a11y.css';
 import { state, set, ls } from '../lib/store.js';
 import { esc, ageText, icon } from '../lib/ui.js';
 import { loadStations } from '../lib/actions.js';
@@ -6,6 +8,7 @@ import { api } from '../lib/api.js';
 import { mountAirLens } from '../lib/air-lens-map.js';
 import { stationReading, nearestStation, readingColor } from '../lib/air-lens-data.js';
 import { detailPanel, words as w, statusName, pollutantName } from '../lib/air-lens-panel.js';
+import { nearbySection, revealStage } from '../lib/air-lens-nearby-view.js';
 
 const lens = { card: null, loading: false, error: false, pollutant: 'pm25', filter: 'all', query: '', night: true, evidence: true, pin: null, placing: false, orbit: false, failed: false, tileError: false, ready: false, view: 'city', locationMessage: '', locating: false };
 let scene = null, request = null, refreshTimer = null, active = false, generation = 0, locationRequest = 0, renderedUid = null;
@@ -66,6 +69,7 @@ export function view() {
     <header class="lens-heading"><div><p class="lens-overline"><span class="lens-orbit-logo" aria-hidden="true">◉</span> TAAZA HAWA / ${w('DELHI OBSERVATORY', 'दिल्ली की हवा')}</p><h1>Air <em>Lens.</em><span>${w('A little perspective.<br>A clearer picture.', 'हवा को देखें।<br>समझकर फ़ैसला लें।')}</span></h1></div><div class="lens-heading-meta"><span>${w('ONE CITY. MANY READINGS.', 'एक शहर। कई रीडिंग।')}</span><p><b>${String(state.stations.length).padStart(2, '0')}</b> ${w('stations', 'स्टेशन')} <i></i> <b>${String(fresh).padStart(2, '0')}</b> ${w('fresh', 'ताज़ा')}</p></div></header>
     <div class="lens-workspace">
       <section class="lens-stage ${lens.night ? 'night' : 'day'}" aria-label="${w('Interactive Delhi air map', 'दिल्ली की हवा का नक्शा')}">
+        <button type="button" class="lens-skip" data-lens="skip-map">${w('Skip station markers', 'नक्शे के स्टेशन छोड़ें')}</button>
         <div id="air-lens-map" class="lens-map" aria-label="${w('Delhi station map. Use the station list for keyboard selection.', 'दिल्ली के स्टेशन। कीबोर्ड के लिए नीचे स्टेशन सूची चुनें।')}"></div>
         <div class="lens-map-shade"></div>
         <div class="lens-scene-top"><div class="lens-scene-location"><span>NEW DELHI</span><small>28.6139° N &nbsp; 77.2090° E</small></div><div class="lens-scene-theme" aria-label="${w('Map appearance', 'नक्शे का रंग')}">${button('night', w('Dusk', 'शाम'), lens.night)}${button('day', w('Day', 'दिन'), !lens.night)}</div></div>
@@ -78,12 +82,13 @@ export function view() {
         <div class="lens-scene-bottom"><span class="lens-scene-caption">${w('A city in perspective.', 'अपने शहर की हवा देखें।')}</span><p><span class="lens-desktop-hint">${w('Drag to explore · right-drag to tilt', 'खींचकर देखें · दाएँ बटन से झुकाएँ')}</span><span class="lens-touch-hint">${w('Pinch to zoom · drag to explore', 'दो उँगलियों से ज़ूम · खींचकर देखें')}</span></p><div class="lens-landmarks"><span>${w('EXPLORE', 'देखें')}</span>${button('india-gate', w('India Gate', 'इंडिया गेट'))}${button('old-delhi', w('Old Delhi', 'पुरानी दिल्ली'))}${button('yamuna', w('Yamuna', 'यमुना'))}</div></div>
         ${!lens.ready || lens.failed ? `<div class="lens-map-status ${lens.failed ? 'failed' : ''}" role="status"><span class="lens-loading-ring"></span><h2>${lens.failed ? w('The map is taking a break.', 'नक्शा अभी नहीं खुल रहा।') : w('Bringing Delhi into view', 'दिल्ली का नक्शा खुल रहा है')}</h2><p>${lens.failed ? w('Your station readings are still available below.', 'स्टेशन की रीडिंग नीचे उपलब्ध हैं।') : w('Loading the city, then its air.', 'पहले शहर, फिर उसकी हवा।')}</p>${lens.failed ? `<button data-lens="retry-map">${w('Reload map', 'नक्शा फिर खोलें')}</button>` : ''}</div>` : ''}
         ${lens.tileError && !lens.failed ? `<p class="lens-tile-notice" role="status">${w('Some map detail is unavailable. Station readings remain usable.', 'नक्शे के कुछ हिस्से नहीं खुले। स्टेशन रीडिंग उपलब्ध हैं।')}</p>` : ''}
-        ${lens.placing ? `<p class="lens-pin-prompt" role="status">${w('Click the map to place your pin', 'अपना पिन रखने के लिए नक्शे पर क्लिक करें')}</p>` : ''}
+        ${lens.placing ? `<p class="lens-pin-prompt" role="status">${w('Click or tap the map to place your pin', 'अपना पिन रखने के लिए नक्शे पर क्लिक या टैप करें')}</p>` : ''}
       </section>
       <aside class="lens-detail" aria-label="${w('Selected station evidence', 'चुने गए स्टेशन की जानकारी')}" id="lens-detail">${detailPanel(current(), lens)}</aside>
       <div class="lens-map-footer"><div class="lens-pollutants"><span>${w('MAP READINGS', 'नक्शे की रीडिंग')}</span>${button('pm25', 'PM₂.₅', lens.pollutant === 'pm25')}${button('pm10', 'PM₁₀', lens.pollutant === 'pm10')}<small>${w('sub-index', 'उप-सूचकांक')}</small></div><div class="lens-map-key"><span><i class="solid"></i>${w('Fresh', 'ताज़ा')}</span><span><i class="dashed"></i>${w('Over 3h old', '3 घंटे से पुरानी')}</span><span><i class="missing"></i>${w('Missing', 'रीडिंग नहीं')}</span></div></div>
     </div>
     <div class="lens-actions"><div>${button('locate', `${icon.target}${lens.locating ? w('Locating…', 'स्थान खोज रहे हैं…') : w('Use my location', 'मेरा स्थान')}`, false, lens.locating ? 'disabled' : '')}${button('pin', `${icon.pin}${w('Drop a pin', 'पिन रखें')}`, lens.placing)}${lens.pin ? button('clear-pin', w('Clear pin', 'पिन हटाएँ')) : ''}<span class="lens-location-message" role="status">${esc(lens.locationMessage)}</span></div><label class="lens-evidence-toggle"><input id="lens-evidence-toggle" type="checkbox" ${lens.evidence ? 'checked' : ''}>${w('Show estimate connections', 'अंदाज़े के संबंध दिखाएँ')}</label></div>
+    ${nearbySection(lens.pin, state.stations, lens.pollutant, state.uid)}
     <div class="lens-colour-scale"><span>${pollutantName(lens.pollutant)} ${w('sub-index', 'उप-सूचकांक')}</span><div>${[50, 100, 200, 300, 400, 500].map((v) => `<span><i style="background:${readingColor(v)}"></i><small>${v}</small></span>`).join('')}</div><span>${w('Higher = more polluted · zoom for more markers', 'ज़्यादा = अधिक प्रदूषण · और रीडिंग के लिए ज़ूम करें')}</span></div>
     <p class="lens-footnote">${w('Connections show inputs to an estimate, not the movement of pollution. Buildings give geographic context; their heights do not describe air quality.', 'रेखाएँ अंदाज़े में इस्तेमाल हुई रीडिंग दिखाती हैं, प्रदूषण की गति नहीं। इमारतों की ऊँचाई केवल भौगोलिक जानकारी है।')}</p>
     <section class="lens-directory" aria-labelledby="lens-directory-title"><div class="lens-directory-head"><div><span class="lens-overline">${w('THE STATION NETWORK', 'स्टेशन नेटवर्क')}</span><h2 id="lens-directory-title">${w('Find your corner of Delhi.', 'दिल्ली में अपना इलाक़ा खोजें।')}</h2></div><label class="lens-search">${icon.search}<input id="lens-search" type="search" placeholder="${w('Search a station…', 'स्टेशन खोजें…')}" aria-label="${w('Search stations', 'स्टेशन खोजें')}" value="${esc(lens.query)}"></label></div>
@@ -128,10 +133,11 @@ function action(name) {
   else if (name === 'in' || name === 'out') controls?.zoom(name === 'in' ? 1 : -1);
   else if (name === 'north') controls?.north();
   else if (name === 'orbit') controls?.orbit();
-  else if (name === 'pin') lens.placing = !lens.placing;
+  else if (name === 'pin') { lens.placing = !lens.placing; set({}); if (lens.placing) revealStage(); return; }
   else if (name === 'clear-pin') { lens.pin = null; lens.locationMessage = ''; }
   else if (name === 'locate') { locate(); return; }
   else if (name === 'retry-card') { loadEvidence(); return; }
+  else if (name === 'skip-map') { document.querySelector('.lens-scene-theme button')?.focus(); return; }
   else if (name === 'retry-map') { scene?.controller.abort(); scene = null; lens.failed = false; lens.ready = false; }
   else {
     const places = { 'india-gate': [77.2295, 28.6129], 'old-delhi': [77.2335, 28.6562], yamuna: [77.256, 28.632] };
@@ -145,6 +151,9 @@ export function bind() {
   document.querySelectorAll('[data-evidence-station]').forEach((b) => b.addEventListener('click', () => select(Number(b.dataset.evidenceStation))));
   document.getElementById('lens-station-list')?.addEventListener('click', (event) => {
     const row = event.target.closest('[data-station]'); if (row) select(Number(row.dataset.station));
+  });
+  document.getElementById('lens-nearby-list')?.addEventListener('click', (event) => {
+    const row = event.target.closest('[data-nearby-station]'); if (row) { select(Number(row.dataset.nearbyStation)); if (event.detail) revealStage(); }
   });
   document.getElementById('lens-search')?.addEventListener('input', (event) => {
     lens.query = event.target.value;
@@ -175,7 +184,7 @@ export function bind() {
 export function beforeRender() {
   const focused = document.activeElement;
   const id = focused?.id;
-  const attribute = ['data-lens', 'data-station', 'data-evidence-station'].find((a) => focused?.hasAttribute(a));
+  const attribute = ['data-lens', 'data-station', 'data-evidence-station', 'data-nearby-station'].find((a) => focused?.hasAttribute(a));
   const value = attribute ? focused.getAttribute(attribute) : null;
   const detailScroll = renderedUid === state.uid ? document.getElementById('lens-detail')?.scrollTop || 0 : 0;
   renderedUid = state.uid;
