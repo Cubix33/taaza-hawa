@@ -17,6 +17,7 @@ export async function loadStations(force = false) {
         const st = await api("/stations");
         state.stations = st.stations || [];
         state.demo = !!st.demo;
+        state.emailEnabled = !!st.email_enabled;
         if (!state.stations.some((s) => s.uid === state.uid) && state.stations[0]) {
           state.uid = state.stations[0].uid;
           ls.set("uid", state.uid);

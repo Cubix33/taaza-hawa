@@ -42,4 +42,8 @@ def seed(now_ts: int, hours: int = 72, seed_: int = 11) -> MemoryStore:
         service.ingest(s, rows, cams, t)
         if service.datetime.fromtimestamp(t, service.IST).hour == 6:
             service.morning_predictions(s, t)
+    # a plausible October fire count, labelled demo like everything else here
+    s.put("KV", "fires", {"at": now_ts, "total": 312, "upwind": 268, "wind_from": 315, "wind_kmh": 9.5,
+                          "window_h": 48, "radius_km": 500, "source": "NASA FIRMS (VIIRS) · wind: Open-Meteo",
+                          "demo": True})
     return s

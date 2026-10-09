@@ -621,3 +621,19 @@ html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
 @media (max-width: 1080px) { .svc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .card-actions .btn { flex: 1 1 100%; } .svc-grid { grid-template-columns: 1fr; } }
 .voice-err { margin: 8px 0 0; font-size: .9rem; color: var(--stay); }
+
+/* ---------- station reliability (record page) and the fire count ---------- */
+.rel-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.rel-list li { display: grid; grid-template-columns: minmax(120px, 1.1fr) minmax(80px, 1.6fr) 48px minmax(170px, 1.4fr); gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.rel-list b { font: 500 .9rem var(--mono); text-align: right; }
+.rel-list small { font-size: .8rem; color: var(--muted); }
+.acc-mini.low i { background: var(--wait); }
+.rel-l { display: block; margin-top: 2px; font-size: .78rem; font-weight: 500; color: var(--muted); line-height: 1.35; }
+.fires p { margin: 0; } .fires p + p { margin-top: 8px; }
+.fires-t { margin-bottom: 6px !important; }
+.fires-src { font: 500 .72rem var(--mono); color: var(--muted); }
+@media (max-width: 760px) {
+  .rel-list li { grid-template-columns: 1fr 52px; } .rel-list .acc-mini { grid-column: 1 / -1; grid-row: 2; } .rel-list small { grid-column: 1 / -1; }
+}
+@media (pointer: coarse) { .rel-list a { display: inline-flex; align-items: center; min-height: 40px; } }
+.rel-more { margin-top: 14px; height: 42px; }

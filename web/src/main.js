@@ -7,17 +7,21 @@ import * as home from "./pages/home.js";
 import * as check from "./pages/check.js";
 import * as stations from "./pages/stations.js";
 import * as record from "./pages/record.js";
+import * as school from "./pages/school.js";
 import * as about from "./pages/about.js";
 
 // hash routes work on any static host (Amplify) without rewrite rules
-const PAGES = { home, check, stations, record, about };
+const PAGES = { home, check, school, stations, record, about };
 const NAV = [
   ["home", "navHome", icon.home],
   ["check", "navCheck", icon.gauge],
+  ["school", "navSchool", icon.school],
   ["stations", "navStations", icon.map],
   ["record", "navRecord", icon.record],
   ["about", "navAbout", icon.book],
 ];
+// the phone tab bar keeps five; "How it works" stays in the top bar, the footer and on Check my air
+const TABS = NAV.filter(([r]) => r !== "about");
 
 function parseHash() {
   const [path, qs] = location.hash.replace(/^#\/?/, "").split("?");
@@ -31,7 +35,7 @@ function layout() {
   return `
   <header class="topbar"><div class="wrap topbar-in">
     <a class="brand" href="#/">${icon.logo}<div><b>${t("brand")}</b><small>${t("tagline")}</small></div></a>
-    <nav class="mainnav" aria-label="main">${NAV.map(([r, k]) => `<a href="#/${r === "home" ? "" : r}" class="${state.route === r ? "on" : ""}" ${state.route === r ? 'aria-current="page"' : ""}>${t(k)}</a>`).join("")}</nav>
+    <nav class="mainnav" aria-label="main">${NAV.map(([r, k]) => `<a href="#/${r === "home" ? "" : r}" class="nav-${r} ${state.route === r ? "on" : ""}" ${state.route === r ? 'aria-current="page"' : ""}>${t(k)}</a>`).join("")}</nav>
     <button id="lang" class="lang" aria-label="${hi() ? "Switch to English" : "हिंदी में देखें"}">${hi() ? "English" : "हिंदी"}</button>
   </div></header>
   ${demo ? `<div class="demo-bar">◆ ${t("demo")}</div>` : ""}
@@ -41,7 +45,7 @@ function layout() {
     <nav class="foot-nav" aria-label="footer">${NAV.map(([r, k]) => `<a href="#/${r === "home" ? "" : r}">${t(k)}</a>`).join("")}</nav>
     <div class="foot-meta"><p>${t("footData")}</p><a href="https://github.com/Cubix33/taaza-hawa" target="_blank" rel="noopener">GitHub ↗</a></div>
   </div></footer>
-  <nav class="tabbar" aria-label="main">${NAV.map(([r, k, ic], i) => `<a href="#/${r === "home" ? "" : r}" class="${state.route === r ? "on" : ""}" aria-label="${t(k)}">${ic}<span>${t("tabs")[i]}</span></a>`).join("")}</nav>`;
+  <nav class="tabbar" aria-label="main">${TABS.map(([r, k, ic], i) => `<a href="#/${r === "home" ? "" : r}" class="${state.route === r ? "on" : ""}" aria-label="${t(k)}">${ic}<span>${t("tabs")[i]}</span></a>`).join("")}</nav>`;
 }
 
 function errorView() {

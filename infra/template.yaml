@@ -17,6 +17,15 @@ Parameters:
     Type: String
     Default: ""
     Description: e.g. in.anthropic.claude-haiku-4-5-20251001-v1:0 ; empty disables the Hindi rephrase.
+  SiteUrl:
+    Type: String
+    Default: "https://main.d2r1frd99buxhf.amplifyapp.com"
+    Description: Public website URL, used for links in school emails.
+  FirmsMapKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: Free NASA FIRMS map key (firms.modaps.eosdis.nasa.gov/api/map_key); empty hides the fire count.
   DefaultStationUid:
     Type: String
     Default: "0"
@@ -87,7 +96,7 @@ Resources:
         - Statement:
             - { Effect: Allow, Action: ses:SendEmail, Resource: "*" }
 
-  # ---- polling, morning promises, bulletin quote ------------------------------------------
+  # ---- polling, morning promises + school plans, bulletin quote -----------------------------
   PollerFn:
     Type: AWS::Serverless::Function
     Properties:
@@ -96,10 +105,15 @@ Resources:
       Environment:
         Variables:
           WAQI_TOKEN: !Ref WaqiToken
+          SES_SENDER: !Ref SesSender
+          SITE_URL: !Ref SiteUrl
+          FIRMS_MAP_KEY: !Ref FirmsMapKey
       Policies:
         - DynamoDBCrudPolicy: { TableName: !Ref Table }
         - Statement:
             - { Effect: Allow, Action: states:SendTaskSuccess, Resource: "*" }
+        - Statement:
+            - { Effect: Allow, Action: ses:SendEmail, Resource: "*" }
       Events:
         Poll:
           Type: ScheduleV2
@@ -131,6 +145,7 @@ Resources:
           DEFAULT_STATION_UID: !Ref DefaultStationUid
           BEDROCK_MODEL_ID: !Ref BedrockModelId
           BEDROCK_REGION: !Ref AWS::Region
+          SITE_URL: !Ref SiteUrl
       FunctionUrlConfig:
         AuthType: NONE
         Cors:
@@ -146,6 +161,10 @@ Resources:
               Resource: "*"
         - Statement:
             - { Effect: Allow, Action: polly:SynthesizeSpeech, Resource: "*" }
+        - Statement:
+            - { Effect: Allow, Action: ses:SendEmail, Resource: "*" }
+        - Statement:  # school search (Amazon Location Service, Places)
+            - { Effect: Allow, Action: geo-places:SearchText, Resource: "*" }
 
   PollFailAlarm:
     Type: AWS::CloudWatch::Alarm

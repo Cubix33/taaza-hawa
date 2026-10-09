@@ -1,16 +1,17 @@
 // Shared formatting, AQI bands, icons and the gauge.
 import { state } from "./store.js";
-import { t, hi } from "./i18n.js";
+import { t, hi, T } from "./i18n.js";
 
 export const STALE_MIN = 180;
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-export function ageText(min) {
+export function ageText(min, lang = state.lang) {
+  const h_ = lang === "hi";
   if (min == null) return "—";
-  if (min < 60) return `${min} ${hi() ? "मिनट" : "min"}`;
+  if (min < 60) return `${min} ${h_ ? "मिनट" : "min"}`;
   const h = Math.floor(min / 60);
-  if (h < 48) return `${h} ${hi() ? "घंटे" : "h"}`;
-  return `${Math.floor(h / 24)} ${hi() ? "दिन" : "days"}`;
+  if (h < 48) return `${h} ${h_ ? "घंटे" : "h"}`;
+  return `${Math.floor(h / 24)} ${h_ ? "दिन" : "days"}`;
 }
 export const isOld = (s) => s.age_min == null || s.age_min > STALE_MIN;
 
@@ -43,6 +44,8 @@ export const icon = {
   gauge: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17a8 8 0 1 1 16 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 17l4-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17" r="1.6" fill="currentColor"/></svg>`,
   map: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2" fill="currentColor"/><circle cx="17" cy="6" r="2" fill="currentColor"/><circle cx="12" cy="13" r="2" fill="currentColor"/><circle cx="7" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="17" r="2" fill="currentColor"/></svg>`,
   record: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 12l2.5 2.5L16 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  school: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20v-8.5L12 7l7 4.5V20M12 7V3.5h4.5v2.2H12M10 20v-4.5h4V20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
+  print: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2M7 14h10v6H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
   book: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
   clock: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
   wa: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5l1.2-3.6A8 8 0 1 1 9 19z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 9.2c.2 2.4 2.4 4.6 4.8 4.8l1-1.3-1.8-.9-.7.7c-.8-.4-1.4-1-1.8-1.8l.7-.7-.9-1.8z" fill="currentColor"/></svg>`,
@@ -50,6 +53,23 @@ export const icon = {
   stop: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor"/></svg>`,
   logo: `<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 13h15a4 4 0 1 0-4-4M5 19h19a4.5 4.5 0 1 1-4.5 4.5M5 25h9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`,
 };
+
+// ---------- fires around Delhi (NASA FIRMS): a count with its wind, never a cause ----------
+export const compassName = (deg, lang = state.lang) => T[lang].compass[Math.round(deg / 45) % 8];
+
+export function fireText(f, lang = state.lang) {
+  const L = T[lang];
+  let s = L.fireCount(f.total, f.radius_km || 500, f.window_h || 48);
+  if (f.total) s += " " + (f.upwind == null ? L.fireCalm : L.fireUp(f.upwind, compassName(f.wind_from, lang)));
+  return s;
+}
+
+export function fireView(f) {
+  if (!f) return "";
+  return `<section class="panel fires"><p class="fires-t"><b>${t("fireTitle")}</b></p>
+    <p>${fireText(f)}</p><p class="muted small">${t("fireNote")}</p>
+    ${f.source ? `<p class="fires-src">${esc(f.source)}</p>` : ""}</section>`;
+}
 
 // ---------- the gauge: CPCB bands on a half-dial, an estimate drawn as an arc ----------
 const CX = 120, CY = 118, R = 96;

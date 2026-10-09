@@ -5,6 +5,8 @@ Single table, string pk/sk. Key layout:
   READ#{uid} / {ts:012d}     one reading (sub-indices) + CAMS value at that hour
   PRED#{uid} / MORNING#{date}  or  HOLD#{id}    graded promises
   KV / {name}                misc (cams cache, bulletin line, poll health)
+  SCHOOL / {id}              a registered school (station, contact, hashed key)
+  SDAY#{id} / {date}         that school's plan for one day, and what the school did
 """
 from __future__ import annotations
 
@@ -16,6 +18,7 @@ from typing import Any, Protocol
 class Store(Protocol):
     def put(self, pk: str, sk: str, item: dict) -> None: ...
     def get(self, pk: str, sk: str) -> dict | None: ...
+    def delete(self, pk: str, sk: str) -> None: ...
     def query(self, pk: str, prefix: str = "", limit: int | None = None,
               reverse: bool = False) -> list[dict]: ...
 
@@ -30,6 +33,9 @@ class MemoryStore:
     def get(self, pk: str, sk: str) -> dict | None:
         item = self._d.get(pk, {}).get(sk)
         return dict(item) if item else None
+
+    def delete(self, pk: str, sk: str) -> None:
+        self._d.get(pk, {}).pop(sk, None)
 
     def query(self, pk: str, prefix: str = "", limit: int | None = None,
               reverse: bool = False) -> list[dict]:
@@ -72,6 +78,9 @@ class DynamoStore:
     def get(self, pk: str, sk: str) -> dict | None:
         r = self._t.get_item(Key={"pk": pk, "sk": sk}).get("Item")
         return _from_ddb(r) if r else None
+
+    def delete(self, pk: str, sk: str) -> None:
+        self._t.delete_item(Key={"pk": pk, "sk": sk})
 
     def query(self, pk: str, prefix: str = "", limit: int | None = None,
               reverse: bool = False) -> list[dict]:

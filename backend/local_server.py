@@ -4,7 +4,8 @@
   WAQI_TOKEN=xxx python local_server.py --live   -> poll real WAQI + CAMS every 15 min
 
 Extra dev-only routes (demo mode): POST /dev/return?uid=1  -> that station "comes back" with a
-fresh reading, which grades any pending promise. POST /dev/morning -> create morning promises.
+fresh reading, which grades any pending promise. POST /dev/morning -> create morning promises
+(and today's school plans).
 """
 import argparse
 import json
@@ -19,7 +20,7 @@ from urllib.parse import parse_qsl, urlparse
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from handlers.api import route  # noqa: E402
-from taaza import demo, service  # noqa: E402
+from taaza import demo, school, service  # noqa: E402
 from taaza.sources import bulletin, openmeteo, waqi  # noqa: E402
 from taaza.sources.waqi import StationReading  # noqa: E402
 
@@ -81,7 +82,8 @@ class H(BaseHTTPRequestHandler):
                 if u.path == "/dev/return" and not LIVE:
                     return self._send(200, dev_return(int(q["uid"])))
                 if u.path == "/dev/morning" and not LIVE:
-                    return self._send(200, {"created": service.morning_predictions(STORE, now())})
+                    return self._send(200, {"created": service.morning_predictions(STORE, now()),
+                                            "schools": school.morning(STORE, now())})
                 code, out = route(method, u.path, q, body, STORE, now())
         except (KeyError, ValueError) as e:
             code, out = 400, {"error": str(e)}

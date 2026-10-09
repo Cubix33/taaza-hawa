@@ -55,6 +55,7 @@ export function view() {
       ${b.poll ? `<p class="muted small rs-poll">${t("feedAge")}: ${since(b.poll.at)} ${t("ago")}</p>` : ""}
     </section>
     ${accuracyView(b.accuracy)}
+    ${example ? "" : reliabilityView(real.reliability)}
     ${b.participation ? `<p class="cpcb"><b>CPCB</b> ${esc(b.participation.line)}</p>` : ""}
     <div class="rec-cols">
       ${anyRow ? `<section class="panel grid">
@@ -95,7 +96,24 @@ function accuracyView(acc) {
   </section>`;
 }
 
+// "How reliable is each station?": hours with a number, longest silence; least reliable first
+const REL_SHOW = 8;
+function reliabilityView(rel) {
+  if (!rel?.stations?.length) return "";
+  return `<section class="panel acc rel">
+    <h2 class="h2s">${t("relTitle")}</h2>
+    <p class="muted acc-lead">${t("relLead", rel.window_h)}</p>
+    <ul class="rel-list">${(state.relAll ? rel.stations : rel.stations.slice(0, REL_SHOW)).map((s) => `<li>
+      <a href="#/check?s=${s.uid}">${esc(s.name)}</a>
+      <span class="acc-mini ${s.pct < 80 ? "low" : ""}"><i style="width:${s.pct}%"></i></span>
+      <b>${s.pct}%</b>
+      <small>${t("relHours", s.reported_h, rel.window_h)} · ${t("relGap", s.longest_gap_h)}${s.silences ? ` · ${t("relSil", s.silences)}` : ""}</small></li>`).join("")}</ul>
+    ${rel.stations.length > REL_SHOW ? `<button id="relAll" class="btn ghost rel-more">${state.relAll ? t("relLess") : t("relAll", rel.stations.length)}</button>` : ""}
+  </section>`;
+}
+
 export function bind() {
+  document.getElementById("relAll")?.addEventListener("click", () => set({ relAll: !state.relAll }));
   document.getElementById("exToggle")?.addEventListener("click", () =>
     set({ recordView: state.recordView === "example" ? "real" : "example" }));
 }

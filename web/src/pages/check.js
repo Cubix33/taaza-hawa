@@ -1,7 +1,8 @@
 import { state, set, ls } from "../lib/store.js";
 import { t, hi } from "../lib/i18n.js";
-import { esc, ageText, isOld, icon, gauge, scale, bandName, bandColor } from "../lib/ui.js";
+import { esc, ageText, isOld, icon, gauge, scale, bandName, bandColor, fireView } from "../lib/ui.js";
 import { run, loadCard, restoreHold, goStation, startHold, addEmail, toggleSpeak } from "../lib/actions.js";
+import { pickerView, bindPicker } from "../lib/picker.js";
 
 export function load() {
   const s = Number(state.params.s);
@@ -14,44 +15,9 @@ export function view() {
   const c = state.card;
   return `<section class="page-head wrap">
       <div><p class="eyebrow">${t("navCheck")}</p><h1 class="page-title">${esc(hi() ? "अभी बाहर जाऊँ?" : "Can I go outside right now?")}</h1></div>
-      ${picker()}
+      ${pickerView(state.uid)}
     </section>
     <div class="wrap">${c ? card(c) : skeleton()}</div>`;
-}
-
-// custom station picker: the native <select> list rendered white-on-white in dark mode
-function picker() {
-  const cur = state.stations.find((s) => s.uid === state.uid);
-  return `<div class="picker">
-    <div class="combo ${state.pickerOpen ? "open" : ""}">
-      <button id="pick" class="sel" aria-haspopup="listbox" aria-expanded="${state.pickerOpen}">
-        ${icon.pin}<span class="sel-name">${esc(cur?.name || t("loading"))}</span>
-        ${cur ? `<span class="sel-age ${isOld(cur) ? "old" : "ok"}">${ageText(cur.age_min)}</span>` : ""}
-        <span class="chev">${icon.chev}</span>
-      </button>
-      ${state.pickerOpen ? `<div class="pop" role="dialog" aria-label="${esc(t("search"))}">
-        <label class="pop-search">${icon.search}<input id="pickq" type="search" placeholder="${t("search")}" value="${esc(state.q)}" autocomplete="off" /></label>
-        <ul id="picklist" role="listbox"></ul>
-        <p class="pop-foot"><span><i class="dot ok"></i>${t("legendFresh")}</span><span><i class="dot old"></i>${t("legendOld")}</span></p>
-      </div>` : ""}
-    </div>
-    <button id="locate" class="icon-btn" title="${t("locate")}" aria-label="${t("locate")}">${icon.target}</button>
-  </div>`;
-}
-
-function renderPickerList() {
-  const ul = document.getElementById("picklist");
-  if (!ul) return;
-  // keep spaces when matching ("r k" must not hit dwa-rk-a); names starting with the query rank first
-  const norm = (x) => x.toLowerCase().replace(/\s+/g, " ").trim();
-  const q = norm(state.q), q0 = q.replace(/ /g, "");
-  const starts = (s) => norm(s.name).startsWith(q) || norm(s.name).replace(/ /g, "").startsWith(q0);
-  const list = !q ? state.stations : state.stations.filter((s) => norm(s.name).includes(q) || starts(s)).sort((a, b) => starts(b) - starts(a));
-  ul.innerHTML = list.length ? list.map((s) => `<li><button class="opt ${s.uid === state.uid ? "cur" : ""}" role="option" aria-selected="${s.uid === state.uid}" data-pick="${s.uid}">
-      <i class="dot ${isOld(s) ? "old" : "ok"}"></i><span>${esc(s.name)}</span><small class="${isOld(s) ? "old" : ""}">${ageText(s.age_min)}</small>
-      ${s.uid === state.uid ? `<span class="tick">${icon.check}</span>` : ""}</button></li>`).join("")
-    : `<li class="empty">${t("noMatch")}</li>`;
-  ul.querySelectorAll("[data-pick]").forEach((b) => b.addEventListener("click", () => goStation(Number(b.dataset.pick))));
 }
 
 function skeleton() {
@@ -113,7 +79,7 @@ function card(c) {
   ${trendView(c)}
 
   <section class="facts ${iv ? "f4" : "f2"}">
-    <div><dt>${t("age")}</dt><dd>${ageText(c.age_min)} ${t("ago")}</dd></div>
+    <div><dt>${t("age")}</dt><dd>${ageText(c.age_min)} ${t("ago")}${c.reliability ? `<small class="rel-l">${t("relCheck", c.reliability.pct, c.reliability.window_h)}</small>` : ""}</dd></div>
     <div><dt>${t("source")}</dt><dd>${t("sourceVal")} <small>(WAQI)</small></dd></div>
     ${iv ? `<div><dt>${t("last")}</dt><dd>AQI ${c.last_value ?? "—"} <small>· ${ageText(c.age_min)} ${t("ago")}</small></dd></div>
             <div><dt>${t("basis")}</dt><dd class="small-dd">${iv.neighbours?.length ? esc(iv.neighbours.join(", ")) : t("onlyOld")}${iv.used_cams ? ` + ${t("model")}` : ""}
@@ -126,6 +92,7 @@ function card(c) {
   ${c.yesterday ? `<section class="panel yday ${c.yesterday.status === "HIT" ? "ok" : c.yesterday.status === "PENDING" ? "" : "no"}">
       <span class="yd-ic">${c.yesterday.status === "HIT" ? "✓" : c.yesterday.status === "PENDING" ? "…" : "✗"}</span>
       <p>${esc(hi() ? c.yesterday.hi : c.yesterday.en)}</p></section>` : ""}
+  ${fireView(c.fires)}
   ${c.participation ? `<p class="cpcb"><b>CPCB</b> ${esc(c.participation.line)}</p>` : ""}
   <a class="panel link-panel" href="#/about"><span>${icon.book}</span><b>${t("navAbout")}</b><span class="chev-r">${icon.arrow}</span></a>
   </div></div>`;
@@ -195,13 +162,7 @@ function holdView(c) {
 
 export function bind() {
   const $ = (id) => document.getElementById(id);
-  $("pick")?.addEventListener("click", (e) => { e.stopPropagation(); set({ pickerOpen: !state.pickerOpen }); });
-  $("pickq")?.addEventListener("input", (e) => { state.q = e.target.value; renderPickerList(); });
-  $("pickq")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") document.querySelector("#picklist [data-pick]")?.click();
-    if (e.key === "ArrowDown") { e.preventDefault(); document.querySelector("#picklist [data-pick]")?.focus(); }
-  });
-  $("locate")?.addEventListener("click", locate);
+  bindPicker(state.uid, goStation);
   $("speak")?.addEventListener("click", () => toggleSpeak(spokenFallback(state.card)));
   document.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => {
     const a = state.activity === b.dataset.act ? "" : b.dataset.act;
@@ -211,17 +172,6 @@ export function bind() {
   $("addemail")?.addEventListener("click", addEmail);
   $("newhold")?.addEventListener("click", () => { ls.set("hold", ""); set({ hold: null }); });
   document.querySelectorAll("main [data-uid]").forEach((b) => b.addEventListener("click", () => goStation(Number(b.dataset.uid))));
-  if (state.pickerOpen) { renderPickerList(); $("pickq")?.focus(); }
-}
-
-function locate() {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition((p) => {
-    const { latitude: la, longitude: lo } = p.coords;
-    const d = (s) => (s.lat - la) ** 2 + ((s.lon - lo) * Math.cos((la * Math.PI) / 180)) ** 2;
-    const best = [...state.stations].sort((a, b) => d(a) - d(b))[0];
-    if (best) goStation(best.uid);
-  });
 }
 
 // ---------- share on WhatsApp: the way Delhi families actually pass this on ----------

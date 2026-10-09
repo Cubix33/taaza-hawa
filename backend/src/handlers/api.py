@@ -3,7 +3,7 @@ import json
 import os
 import re
 
-from taaza import phrase, service, speech
+from taaza import mail, phrase, places, reliability, school, service, smoke, speech
 
 from .common import now, sfn, store
 
@@ -34,7 +34,7 @@ def route(method, path, q, body, s, t, start_execution=None):
         return 200, {"ok": True, "now": t, "last_poll": poll,
                      "poll_age_min": (t - poll["at"]) // 60 if poll else None}
     if path == "/stations" and method == "GET":
-        return 200, {"stations": service.station_list(s, t)}
+        return 200, {"stations": service.station_list(s, t), "email_enabled": email_enabled()}
     if path == "/card" and method == "GET":
         uid = int(q.get("uid") or DEFAULT_UID)
         card = service.build_card(s, uid, t)
@@ -44,6 +44,8 @@ def route(method, path, q, body, s, t, start_execution=None):
         card["sentence_hi_ai"] = ai
         card["ai_on"] = ai is not None
         card["email_enabled"] = email_enabled()
+        card["reliability"] = reliability.for_station(s, uid, t)
+        card["fires"] = smoke.current(s, t)
         return 200, card
     if path == "/speak" and method == "GET":
         card = service.build_card(s, int(q.get("uid") or DEFAULT_UID), t)
@@ -56,8 +58,11 @@ def route(method, path, q, body, s, t, start_execution=None):
             print("speak failed:", repr(e))
             return 503, {"error": "voice unavailable"}
     if path == "/scoreboard" and method == "GET":
+        rel = reliability.get(s, t)
         return 200, {**service.scoreboard(s, _recent_dates(t)), "now": t,
-                     "recent_holds": service.recent_holds(s), "accuracy": service.accuracy(s)}
+                     "recent_holds": service.recent_holds(s), "accuracy": service.accuracy(s),
+                     "reliability": {"window_h": rel["window_h"],
+                                     "stations": sorted(rel["stations"].values(), key=lambda r: (r["pct"], r["name"]))}}
     if path == "/history" and method == "GET":
         uid = int(q.get("uid") or DEFAULT_UID)
         hours = max(1, min(72, int(q.get("hours") or 24)))
@@ -86,10 +91,93 @@ def route(method, path, q, body, s, t, start_execution=None):
         hold["email"] = email
         s.put(hold["pk"], hold["sk"], hold)
         return 200, _public(hold)
+    if path == "/places" and method == "GET":
+        return 200, places.search(s, q.get("q", ""))
+    if path.startswith("/school"):
+        return _school_route(method, path, q, body, s, t)
     if path == "/hold" and method == "GET":
         hold = service.get_hold(s, q.get("id", ""))
         return (200, _public(hold)) if hold else (404, {"error": "unknown hold"})
     return 404, {"error": "not found"}
+
+
+def _clean_name(v):
+    v = " ".join(str(v or "").split())
+    return v if 2 <= len(v) <= 80 else None
+
+
+def _school_route(method, path, q, body, s, t):
+    if path == "/school" and method == "POST":
+        name = _clean_name(body.get("name"))
+        if not name:
+            return 400, {"error": "school name must be 2 to 80 characters"}
+        lang = body.get("lang") if body.get("lang") in ("hi", "en") else "hi"
+        sc, token = school.register(s, name, int(body["uid"]), t, lang, _clean_email(body.get("email")),
+                                    _clean_place(body.get("place")))
+        if not sc:
+            return 404, {"error": "unknown station"}
+        _send_confirm(sc, token)
+        return 201, {**_school_view(s, sc, t), "key": sc["key"]}
+    args = q if method == "GET" else body
+    sc = school.authorize(s, args.get("id"), args.get("k"))
+    if not sc:
+        return 404, {"error": "unknown school"}
+    if path == "/school" and method == "GET":
+        return 200, _school_view(s, sc, t)
+    if method != "POST":
+        return 404, {"error": "not found"}
+    if path == "/school/edit":
+        raw = (body.get("email") or "").strip() if "email" in body else None
+        email = _clean_email(raw) if raw else None
+        if raw and not email:
+            return 400, {"error": "invalid email"}
+        name = _clean_name(body.get("name")) if body.get("name") is not None else None
+        if body.get("name") is not None and not name:
+            return 400, {"error": "school name must be 2 to 80 characters"}
+        uid = int(body["uid"]) if body.get("uid") is not None else None
+        lang = body.get("lang") if body.get("lang") in ("hi", "en") else None
+        sc, token = school.update(s, sc, name, uid, email, clear_email=raw == "", lang=lang)
+        if not sc:
+            return 404, {"error": "unknown station"}
+        _send_confirm(sc, token)
+        return 200, _school_view(s, sc, t)
+    if path == "/school/confirm":
+        if not school.confirm_email(s, sc, body.get("token")):
+            return 409, {"error": "this confirmation link is no longer valid"}
+        return 200, _school_view(s, sc, t)
+    if path == "/school/log":
+        action = body.get("action")
+        if action is not None and action not in school.ACTIONS:
+            return 400, {"error": "unknown action"}
+        if not school.log_action(s, sc, body.get("date"), action, t):
+            return 404, {"error": "no plan for that day"}
+        return 200, _school_view(s, sc, t)
+    if path == "/school/delete":
+        school.remove(s, sc)
+        return 200, {"deleted": True}
+    return 404, {"error": "not found"}
+
+
+def _clean_place(p):
+    if not isinstance(p, dict):
+        return None
+    lat, lon = float(p["lat"]), float(p["lon"])
+    if not places.in_area(lat, lon):
+        return None
+    return {"lat": lat, "lon": lon, "address": " ".join(str(p.get("address") or "").split())[:160]}
+
+
+def _school_view(s, sc, t):
+    return {**school.view(s, sc, t), "email_enabled": email_enabled(),
+            "reliability": reliability.for_station(s, sc["uid"], t)}
+
+
+def _send_confirm(sc, token):
+    if token and mail.enabled():
+        try:
+            school.send_confirm(sc, token)
+        except Exception as e:  # the page still shows "not confirmed yet"; they can re-enter the address
+            print("confirm email skipped:", repr(e))
 
 
 def _clean_email(v):
