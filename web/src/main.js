@@ -50,12 +50,14 @@ function errorView() {
 }
 
 function render() {
+  const restore = PAGES[state.route]?.beforeRender?.();
   document.getElementById("app").innerHTML = layout();
   document.getElementById("lang")?.addEventListener("click", () => {
     stopSpeak(); state.lang = hi() ? "en" : "hi"; ls.set("lang", state.lang); document.documentElement.lang = state.lang; render();
   });
   document.getElementById("retry")?.addEventListener("click", () => { state.error = null; PAGES[state.route].load(); });
   PAGES[state.route].bind?.();
+  restore?.();
 }
 onRender(render);
 
@@ -63,6 +65,7 @@ function navigate() {
   stopSpeak();
   const { route, params } = parseHash();
   const changed = route !== state.route;
+  if (changed) PAGES[state.route]?.unmount?.();
   Object.assign(state, { route, params, error: null, pickerOpen: false });
   render();
   if (changed) window.scrollTo(0, 0);

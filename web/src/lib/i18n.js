@@ -9,7 +9,7 @@ export const T = {
   hi: {
     brand: "ताज़ा हवा", tagline: "दिल्ली की हवा, सीधी बात",
     tabs: ["होम", "मेरी हवा", "नक्शा", "रिकॉर्ड", "जानकारी"],
-    navHome: "होम", navCheck: "अपनी हवा देखें", navStations: "3D नक्शा", navRecord: "हमारा रिकॉर्ड", navAbout: "कैसे काम करता है",
+    navHome: "होम", navCheck: "अपनी हवा देखें", navStations: "Air Lens", navRecord: "हमारा रिकॉर्ड", navAbout: "कैसे काम करता है",
 
     // home
     heroAsk: "अभी बाहर जाऊँ?",
@@ -40,7 +40,7 @@ export const T = {
     threeH: "3 घंटे",
     mapTitle: "दिल्ली के सभी हवा-स्टेशन, एक नक्शे पर",
     mapText: "रंगीन बिंदु = ताज़ा नंबर (रंग बताता है हवा कितनी खराब है)। नारंगी घेरा = नंबर 3 घंटे से पुराना। पूरा 3D नक्शा घुमाकर भी देख सकते हैं।",
-    mapCta: "3D नक्शा खोलें", mapAria: "दिल्ली के हवा-स्टेशनों का नक्शा",
+    mapCta: "Air Lens खोलें", mapAria: "दिल्ली के हवा-स्टेशनों का नक्शा",
     recTitle: "हम अपनी गलतियाँ भी दिखाते हैं",
     recText: "रोज़ सुबह हम हर स्टेशन के लिए हवा का अंदाज़ा लगाते हैं। जब असली नंबर आता है, हम जाँचते हैं कि अंदाज़ा सही था या गलत, और दोनों यहाँ दिखाते हैं।",
     recCta: "पूरा रिकॉर्ड देखें",
@@ -122,12 +122,6 @@ ${url}`,
     exRealNote: (n) => n ? `अभी तक ${n} असली जाँच पूरी हुई हैं।` : "अभी तक कोई जाँच पूरी नहीं हुई है।",
 
     // stations (3D map)
-    stTitle: "दिल्ली का 3D हवा-नक्शा",
-    stLead: "हर खंभा एक सरकारी हवा-स्टेशन है। रंग बताता है हवा कितनी खराब है। खंभा जितना ऊँचा, उतनी खराब हवा (या ऊपर बटन से बदलें: नंबर उतना पुराना)। किसी खंभे पर क्लिक करें।",
-    m3Height: "खंभे की ऊँचाई:", m3Colour: "रंग = हवा कितनी खराब", m3Aqi: "हवा कितनी खराब", m3Age: "नंबर कितना पुराना",
-    m3Hint: "खींचकर घुमाएँ · Ctrl/दायाँ क्लिक या दो उँगलियों से झुकाएँ · स्क्रॉल से ज़ूम",
-    m3Open: "इस स्टेशन की पूरी जानकारी", m3Old: "पुराना नंबर",
-    m3Fail: "आपका ब्राउज़र 3D नक्शा नहीं चला पाया, इसलिए सादा नक्शा दिखा रहे हैं।",
     fAll: "सभी", fFresh: "ताज़ा", fOld: "पुराने", sortBy: "क्रम", sName: "नाम", sAge: "कितना पुराना", sAqi: "AQI",
 
     // record
@@ -179,7 +173,7 @@ ${url}`,
   en: {
     brand: "Taaza Hawa", tagline: "Delhi's air, in plain words",
     tabs: ["Home", "My air", "Map", "Record", "About"],
-    navHome: "Home", navCheck: "Check my air", navStations: "3D map", navRecord: "Track record", navAbout: "How it works",
+    navHome: "Home", navCheck: "Check my air", navStations: "Air Lens", navRecord: "Track record", navAbout: "How it works",
 
     heroAsk: "Can I go outside right now?",
     heroWhat: "Taaza Hawa reads the government air station near you and tells you whether it's OK to go out, run, or send the kids to play right now.",
@@ -209,7 +203,7 @@ ${url}`,
     threeH: "3 hours",
     mapTitle: "Every Delhi air station, on one map",
     mapText: "Coloured dot = fresh number (the colour shows how bad the air is). Orange ring = number more than 3 hours old. You can also spin the full 3D map.",
-    mapCta: "Open the 3D map", mapAria: "Map of Delhi air-quality stations",
+    mapCta: "Explore Air Lens", mapAria: "Map of Delhi air-quality stations",
     recTitle: "We show our mistakes too",
     recText: "Every morning we estimate the air for every station. When the real number arrives, we check whether we were right or wrong, and show both here.",
     recCta: "See the full record",
@@ -288,12 +282,6 @@ ${url}`,
     exReal: "See real data", exShow: "See the example", exTag: "Example",
     exRealNote: (n) => n ? `${n} real checks completed so far.` : "No real checks completed yet.",
 
-    stTitle: "Delhi's 3D air map",
-    stLead: "Each column is a government air station. Colour shows how bad the air is. The taller the column, the worse the air (or switch above: the older the number). Click any column.",
-    m3Height: "Column height:", m3Colour: "Colour = how bad the air is", m3Aqi: "How bad the air is", m3Age: "How old the number is",
-    m3Hint: "Drag to move · Ctrl/right-drag or two fingers to tilt · scroll to zoom",
-    m3Open: "Full details for this station", m3Old: "old number",
-    m3Fail: "Your browser couldn't run the 3D map, so here is the flat one.",
     fAll: "All", fFresh: "Fresh", fOld: "Old", sortBy: "Sort", sName: "Name", sAge: "How old", sAqi: "AQI",
 
     board: "Our track record",

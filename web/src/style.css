@@ -515,35 +515,11 @@ html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
 .foot-meta p { margin: 0 0 10px; font-size: .88rem; color: var(--muted); max-width: 34ch; }
 .foot-meta a { font-weight: 600; font-size: .92rem; border-bottom: 1.5px solid var(--ink); }
 
-/* ===== 3D map ===== */
-.m3-tools { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-.m3-frame { position: relative; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--sky-soft); }
-.map3d { height: min(72vh, 640px); min-height: 420px; }
-.map3d.flat { height: auto; min-height: 0; padding: 14px; }
-.m3-fail { margin: 8px 4px 0; font-size: .86rem; color: var(--muted); }
-.m3-legend { position: absolute; left: 12px; bottom: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--line); font-size: .82rem; color: var(--ink2); }
-.m3-legend > i { width: 18px; height: 10px; border-radius: 3px; }
-.m3-legend .grow { width: 70px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, #3fae6a, #b8641b); }
-.m3-legend em { font-style: normal; font: 500 .74rem var(--mono); }
-.m3-old { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
-.m3-old i { width: 14px; height: 14px; border-radius: 50%; border: 2px dashed var(--ochre); }
-.m3-hint { margin: 8px 2px 20px; font: 500 .78rem var(--mono); color: var(--muted); }
-.maplibregl-popup.m3pop .maplibregl-popup-content { display: grid; gap: 3px; padding: 12px 14px; border-radius: 12px; font-family: var(--sans); font-size: .9rem; color: #1d1c19; box-shadow: 0 14px 30px -14px rgba(0, 0, 0, .4); }
-.m3pop .ok { color: #2d7d4f; font-weight: 600; } .m3pop .old { color: #b8641b; font-weight: 600; }
-.m3pop button { margin-top: 6px; height: 34px; padding: 0 12px; border: 0; border-radius: 8px; background: #1d1c19; color: #fbf8f2; font-weight: 600; cursor: pointer; }
-.m3pop .maplibregl-popup-close-button { font-size: 18px; padding: 2px 8px; }
-.st-list { margin-top: 4px; }
-.st-rows { max-height: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
-
 @media (max-width: 1080px) { .use-sec { grid-template-columns: 1fr; gap: 32px; } .foot-in { grid-template-columns: 1fr 1fr; } .foot-meta { grid-column: 1 / -1; } }
 @media (max-width: 760px) {
   .what { font-size: .94rem; }
-  .map3d { height: 62vh; min-height: 360px; }
-  .st-rows { grid-template-columns: 1fr; }
   .foot-in { grid-template-columns: 1fr; gap: 22px; }
-  .m3-legend { right: 12px; }
 }
-.m3-sep { margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--line); }
 
 /* ===== mobile pass ===== */
 @media (max-width: 1080px) {
@@ -562,11 +538,7 @@ html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
   .foot-nav { gap: 0 24px; }
   .ac-oldest a { display: inline-flex; align-items: center; min-height: 40px; }
   .g-name { display: flex; align-items: center; min-height: 40px; }
-  .m3-tools { gap: 8px; }
   /* map: legend below the map so it never fights the map credit */
-  .m3-frame { overflow: visible; border: 0; box-shadow: none; background: none; }
-  .map3d { border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); }
-  .m3-legend { position: static; margin-top: 10px; background: var(--surface); }
   .rec-summary .tally { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .tally div { padding: 12px; } .tally b { font-size: 1.8rem; }
   .what { margin-top: 18px; }

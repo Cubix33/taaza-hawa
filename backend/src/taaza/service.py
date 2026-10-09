@@ -52,7 +52,7 @@ def candidates(store: Store, pollutant: str, exclude_uid: int, now_ts: int,
         r = latest_reading(store, uid)
         if r and pollutant in r["values"]:
             out.append(Neighbour(uid, meta["name"], meta["lat"], meta["lon"],
-                                 r["values"][pollutant], age_minutes(now_ts, r["ts"])))
+                                 r["values"][pollutant], age_minutes(now_ts, r["ts"]), r["ts"]))
     return out
 
 
@@ -173,6 +173,8 @@ def build_card(store: Store, uid: int, now_ts: int) -> dict | None:
         return None
     last = latest_reading(store, uid)
     card: dict = {"uid": uid, "name": meta["name"], "now": now_ts,
+                  "lat": meta["lat"], "lon": meta["lon"],
+                  "evidence": {"neighbours": [], "cams": {"used": False}},
                   "question_hi": texts.QUESTION_HI, "question_en": texts.QUESTION_EN,
                   "participation": store.get("KV", "bulletin"),
                   "yesterday": _yesterday(store, uid, now_ts)}
@@ -207,6 +209,8 @@ def build_card(store: Store, uid: int, now_ts: int) -> dict | None:
                                       est.used_cams, est.calibrated)
     en_band, hi_band = band_names(est.hi)
     card.update(state="stale", answer=ans, band_en=en_band, band_hi=hi_band,
+                evidence={"neighbours": est.evidence, "pollutant": p,
+                          "cams": {"used": est.used_cams}, "policy_version": "idw-cams-v1"},
                 sentence_hi=hi_s, sentence_en=en_s, can_hold=True,
                 last_value=int(round(last["values"][p])),
                 interval={"lo": lo, "hi": hi, "point": int(round(est.point)),
@@ -304,7 +308,9 @@ def station_list(store: Store, now_ts: int) -> list[dict]:
         r = latest_reading(store, uid)
         aqi = round(max(r["values"].values())) if r and r["values"] else None
         out.append({"uid": uid, "name": m["name"], "lat": m["lat"], "lon": m["lon"],
-                    "age_min": age_minutes(now_ts, r["ts"]) if r else None, "aqi": aqi})
+                    "age_min": age_minutes(now_ts, r["ts"]) if r else None, "aqi": aqi,
+                    "reading_ts": r["ts"] if r else None,
+                    "values": r["values"] if r else {}, "source": "WAQI (CPCB mirror)"})
     return sorted(out, key=lambda s: s["name"])
 
 

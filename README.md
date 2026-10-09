@@ -50,7 +50,7 @@ Nobody tells people **how old** the number is, gives them an honest estimate whe
 | **Check it and tell me** | One tap, no account. An **AWS Step Functions** execution waits (at no compute cost) until that station reports again, then the page shows whether the real number landed inside our range. |
 | **A public track record** | Every morning, every station: right or missed by N. Misses are shown as clearly as hits, with the hit rate against an 80 % target and the number of checks always visible. |
 | **Listen** | A Hindi/English voice (Amazon Polly, *Kajal*) reads the answer aloud, for people who don't read easily. |
-| **3D station map** | An interactive 3D map of Delhi: one column per station, coloured by air quality, with height showing either how bad the air is or how old the number is. |
+| **Air Lens** | Explore Delhi in a dusk/day 3D map, fly into real building geometry, select floating station readings, and see the actual inputs behind an estimate. Includes location pins, pollutant switching, search, a flat view, and a keyboard-accessible station list. |
 | **Share on WhatsApp** | One tap sends the verdict, the station and the age of the number to family. |
 
 Also: *"What will you do outside?"* chips (walk, jog, run, child playing) that explain how much more air you breathe than sitting (US EPA rates; the verdict never changes); a last-24-hours line that shows where a station went quiet; Hindi-first with an English switch; light and dark mode; installable as a phone app; no login.
@@ -79,8 +79,8 @@ Also: *"What will you do outside?"* chips (walk, jog, run, child playing) that e
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/screenshots/map3d.jpg" alt="Interactive 3D map of Delhi air stations"/>
-<p align="center"><b>3D map</b><br/><sub>Drag, tilt, zoom. Faded columns with a dashed ring are old numbers.</sub></p>
+<img src="docs/screenshots/air-lens.png" alt="Air Lens: Delhi geography, station readings and an estimate evidence panel"/>
+<p align="center"><b>Air Lens</b><br/><sub>Explore the city, inspect station evidence, and fly into neighbourhood buildings. Demo readings are explicitly labelled.</sub></p>
 </td>
 <td width="50%" valign="top">
 <img src="docs/screenshots/record.jpg" alt="The track record page"/>
@@ -160,6 +160,10 @@ cd web && npm install && npm run dev      # http://localhost:5173
 ```
 
 Demo mode only: `POST /dev/return?uid=1` makes a stale station report again, so you can rehearse a "right" result.
+
+Air Lens uses MapLibre GL JS 6.13 with OpenFreeMap tiles; no map API key is needed. The map compares one pollutant sub-index at a time. Its side panel identifies the selected card's governing pollutant. Dashed markers are old readings; unavailable pollutant data stays neutral. Evidence connections use the estimator's returned coordinates, not a client-side reconstruction. Building heights come from OpenMapTiles and are geographic context only.
+
+Run frontend data-adapter tests with `cd web && npm test`. Deploy the updated backend before the frontend: Air Lens needs the additive `values` / `reading_ts` station fields and structured card `evidence`. Older servers remain usable through the station card, but do not supply pollutant markers or evidence connections. Desktop/mobile layout, language and theme changes, rapid selection, location failure, WebGL fallback/retry, and map cleanup were checked locally with labelled demo data.
 
 ## Deploy to AWS
 

@@ -27,6 +27,7 @@ class Neighbour:
     lon: float
     value: float  # sub-index, same pollutant
     age_min: int
+    reading_ts: int | None = None
 
 
 @dataclass
@@ -39,6 +40,7 @@ class Estimate:
     used_cams: bool
     degraded: bool = False  # True when only the stale own value was available
     neighbours: list[str] = field(default_factory=list)
+    evidence: list[dict] = field(default_factory=list)
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -89,5 +91,11 @@ def estimate(lat: float, lon: float, candidates: list[Neighbour], cams_si: float
     point = sum(w * v for w, v in parts) / sum(w for w, _ in parts)
     lo_o, hi_o, calibrated = conformal_offsets(cal.get("residuals", []))
     lo_o, hi_o = widen_for_age(lo_o, hi_o, age_hours, calibrated)
+    distances = [haversine_km(lat, lon, c.lat, c.lon) for c in ns]
+    weights = [1.0 / max(d, 0.5) for d in distances]
+    evidence = [{"uid": c.uid, "name": c.name, "lat": c.lat, "lon": c.lon,
+                 "value": c.value, "age_min": c.age_min, "reading_ts": c.reading_ts,
+                 "distance_km": round(d, 3), "idw_share": w / sum(weights)}
+                for c, d, w in zip(ns, distances, weights)]
     return Estimate(point, max(0.0, point + lo_o), min(500.0, point + hi_o), calibrated,
-                    len(ns), used_cams, neighbours=[c.name for c in ns])
+                    len(ns), used_cams, neighbours=[c.name for c in ns], evidence=evidence)
