@@ -2,6 +2,7 @@ import { emptyGeoJSON, evidenceGeoJSON, validCoordinate, stationReading, reading
 import { addBuildings, styleMap } from './air-lens-style.js';
 import { mountWind } from './air-lens-wind-layer.js';
 import { mountSky } from './air-lens-sky.js';
+import { lensFeature } from './air-lens-features.js';
 
 export async function mountAirLens(el, getData, handlers, signal) {
   const [gl, { default: workerUrl }] = await Promise.all([
@@ -18,7 +19,7 @@ export async function mountAirLens(el, getData, handlers, signal) {
   const map = new gl.Map({
     container: el, style: 'https://tiles.openfreemap.org/styles/positron',
     center: [77.17, 28.64], zoom: mobile ? 9.7 : 10.45, pitch: mobile ? 30 : 48, bearing: -18,
-    minZoom: 8, maxZoom: 18, maxPitch: 75, maxBounds: [[76.55, 28.1], [77.8, 29.2]],
+    minZoom: 8, maxZoom: 18, maxPitch: lensFeature('sky') ? 75 : 65, maxBounds: [[76.55, 28.1], [77.8, 29.2]],
     canvasContextAttributes: { antialias: true }, attributionControl: { compact: true },
   });
   map.addControl(new gl.ScaleControl({ maxWidth: 90, unit: 'metric' }), 'bottom-left');
@@ -61,7 +62,7 @@ export async function mountAirLens(el, getData, handlers, signal) {
     map.addSource('lens-location', { type: 'geojson', data: emptyGeoJSON() });
     map.addLayer({ id: 'lens-location-line', type: 'line', source: 'lens-location', paint: { 'line-color': '#8dbefb', 'line-width': 2, 'line-dasharray': [2, 3] } });
     try { wind = mountWind(map, reduce); } catch { wind = null; } // wind is optional context; never block the map
-    sky = mountSky(map, reduce);
+    sky = lensFeature('sky') ? mountSky(map, reduce) : { apply() {} };
     ready = true;
   } catch (error) { destroy(); throw error; }
 

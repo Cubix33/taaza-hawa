@@ -2,6 +2,7 @@ import { state } from './store.js';
 import { esc, ageText, icon } from './ui.js';
 import { distanceKm } from './air-lens-data.js';
 import { windLine } from './air-lens-wind-ui.js';
+import { lensFeature } from './air-lens-features.js';
 
 export const words = (en, hi) => state.lang === 'hi' ? hi : en;
 export const pollutantName = (p) => p === 'pm25' ? 'PM₂.₅' : p === 'pm10' ? 'PM₁₀' : p || '—';
@@ -29,7 +30,7 @@ export function detailPanel(s, lens) {
     </div>
     ${c ? `<div class="lens-answer"><span>${words('YOUR OUTDOOR CHECK', 'बाहर जाने से पहले')}</span><p>${esc(answer)}</p></div>
       <div class="lens-age-line">${icon.clock}<span>${c.age_min == null ? words('No station reading yet', 'स्टेशन की रीडिंग अभी नहीं मिली') : `${words('Last reading', 'आख़िरी रीडिंग')} <b>${ageText(c.age_min)} ${words('ago', 'पहले')}</b>`}${c.last_value != null ? ` · ${c.last_value}` : ''}</span></div>` : ''}
-    ${windLine(s, lens.windField)}
+    ${lensFeature('wind') ? windLine(s, lens.windField) : ''}
     ${iv ? `<section class="lens-evidence"><div class="lens-evidence-heading"><h3>${words('Behind the estimate', 'अंदाज़ा कैसे बना')}</h3><span>${String(neighbours.length).padStart(2, '0')}</span></div>
       ${neighbours.length ? `<p>${words('These readings inform the range.', 'इन रीडिंग से यह सीमा बनी है।')}</p><ul>${neighbours.map((n) => `<li><button data-evidence-station="${n.uid}"><i></i><span><b>${esc(n.name)}</b><small>${ageText(n.age_min)} · ${Number(n.distance_km).toFixed(1)} km</small></span><strong>${Math.round(n.value)}</strong></button></li>`).join('')}</ul>` : `<p>${iv.degraded ? words('Only the old reading is available. This is a degraded estimate.', 'सिर्फ़ पुरानी रीडिंग उपलब्ध है। यह सीमित अंदाज़ा है।') : words('Input locations were not included by this server.', 'सर्वर ने इस्तेमाल हुए स्टेशनों के स्थान नहीं भेजे।')}</p>`}
       ${iv.used_cams ? `<p class="lens-model">+ CAMS · ${words('regional model input', 'क्षेत्रीय मॉडल')}</p>` : ''}
