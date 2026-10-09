@@ -359,9 +359,10 @@ def accuracy(store: Store) -> dict:
                 m += 1
             elif st == grader.MISSED_WAITING:
                 u += 1
-            if st in (grader.HIT, grader.MISSED):
+            # the uncalibrated placeholder band (fewer than MIN_CALIBRATION errors); degraded ones are a different case
+            if st in (grader.HIT, grader.MISSED) and item.get("calibrated") is not True and not item.get("degraded"):
+                warming += 1
                 widths.append(item["hi"] - item["lo"])
-                warming += item.get("calibrated") is not True
         g = h + m
         if g or u:
             per.append({"uid": uid, "name": meta["name"], "hits": h, "misses": m, "unverified": u, "graded": g})
