@@ -277,7 +277,8 @@ Built during the hack window (8–11 Oct 2026). Open work is tracked as [issues]
 - [x] School mode: school search, 06:30 plan, email draft, WhatsApp and printable notice, action log, 30-day record
 - [x] Fire context (NASA FIRMS) and station reliability
 - [x] Deployed to AWS and hosted on Amplify
-- [ ] Live WAQI scale check (K3) and the real Dwarka default station
+- [x] Live WAQI scale check (K3): WAQI publishes US-EPA AQI from 1-hour readings, so `parse_feed` converts it back to CPCB sub-indices; it also reads the real UTC time (`time.v` is local wall clock)
+- [ ] The real Dwarka default station
 - [ ] CPCB bulletin parser checked on a real PDF
 - [ ] End-to-end "Hold me to this" loop recorded on AWS
 - [ ] Demo film and AWS Builder Center blog

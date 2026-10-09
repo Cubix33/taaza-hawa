@@ -24,6 +24,9 @@ def handler(event, _ctx):
         except Exception as e:
             print("CAMS fetch failed:", repr(e))
             cams = {}
+        migrated = service.migrate_v2(s, t)  # once, before the first corrected readings land
+        if any(migrated.values()):
+            print("migrated to real UTC + CPCB scale", migrated)
         res = service.ingest(s, readings, cams, t, on_hold_graded=send_hold_result)
         res["morning_catch_up"] = service.ensure_morning(s, t)
         try:

@@ -1,14 +1,17 @@
 """WAQI (aqicn.org) mirror of CPCB stations. Timestamps are treated as data: the age is the product.
 
-ASSUMPTION to verify under kill-test K3: iaqi.pm10.v / iaqi.pm25.v for CPCB stations are
-already CPCB-scale sub-indices. If they turn out to be US-EPA-scale, convert in `parse_feed`
-and nowhere else.
+K3, settled 9 Oct 2026: aqicn publishes only US-EPA AQI from 1-hour readings ("only values
+converted to the US EPA scale are provided"), so `parse_feed` converts them back to CPCB
+sub-indices, here and nowhere else. `time.v` is the station's local wall clock written as an
+epoch, so the real time comes from `time.iso` (or `v` minus `time.tz`).
 """
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import datetime
 
+from ..aqi import cpcb_from_us
 from .http import get_json
 
 DELHI_BOUNDS = "28.40,76.84,28.88,77.35"
@@ -21,8 +24,8 @@ class StationReading:
     name: str
     lat: float
     lon: float
-    ts: int  # epoch seconds, as reported upstream (time.v)
-    values: dict[str, float]  # pollutant -> sub-index
+    ts: int  # real epoch seconds (UTC) of the measurement
+    values: dict[str, float]  # pollutant -> CPCB sub-index
 
 
 def list_station_uids(token: str, bounds: str = DELHI_BOUNDS) -> list[int]:
@@ -32,14 +35,22 @@ def list_station_uids(token: str, bounds: str = DELHI_BOUNDS) -> list[int]:
     return [int(s["uid"]) for s in j["data"]]
 
 
+def utc_epoch(t: dict) -> int:
+    if t.get("iso"):
+        return int(datetime.fromisoformat(t["iso"]).timestamp())
+    tz = t.get("tz") or "+00:00"
+    hh, mm = tz.lstrip("+-").split(":")
+    return int(t["v"]) - (-1 if tz.startswith("-") else 1) * (int(hh) * 3600 + int(mm) * 60)
+
+
 def parse_feed(j: dict) -> StationReading | None:
     if j.get("status") != "ok":
         return None
     d = j["data"]
     try:
-        ts = int(d["time"]["v"])
+        ts = utc_epoch(d["time"])
         geo = d["city"]["geo"]
-        values = {p: float(d["iaqi"][k]["v"]) for p, k in (("pm10", "pm10"), ("pm25", "pm25"))
+        values = {p: round(cpcb_from_us(p, float(d["iaqi"][k]["v"])), 1) for p, k in (("pm10", "pm10"), ("pm25", "pm25"))
                   if k in d.get("iaqi", {})}
         return StationReading(int(d["idx"]), d["city"]["name"], float(geo[0]), float(geo[1]), ts, values)
     except (KeyError, TypeError, ValueError):
