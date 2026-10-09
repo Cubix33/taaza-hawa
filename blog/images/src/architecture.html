@@ -1,0 +1,72 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+  .frame { height: 750px; }
+  .b { position: absolute; padding: 10px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line);
+       box-shadow: 0 1px 2px rgba(29,28,25,.04), 0 10px 24px -18px rgba(29,28,25,.3); }
+  .b h4 { font: 600 15px/1.2 var(--sans); }
+  .b p { font: 400 12.5px/1.35 var(--sans); color: var(--ink2); margin-top: 3px; }
+  .b.sched { border-top: 4px solid #c7457a; } .b.lam { border-top: 4px solid #e07b16; } .b.db { border-top: 4px solid #3b48cc; }
+  .b.sf { border-top: 4px solid #c7457a; } .b.ext { background: var(--bg2); border-style: dashed; }
+  .b.ai { border-top: 4px solid #1a9c8c; } .b.web { border-top: 4px solid #d6302e; } .b.mon { border-top: 4px solid #c7457a; }
+  .b.opt { border-style: dashed; opacity: .92; }
+  .lane { position: absolute; left: 20px; font: 600 11px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); writing-mode: vertical-rl; transform: rotate(180deg); }
+  svg { position: absolute; inset: 0; pointer-events: none; }
+  .lbl { position: absolute; font: 500 11px/1.2 var(--sans); color: var(--ink2); background: var(--bg); padding: 1px 4px; border-radius: 4px; white-space: nowrap; }
+</style></head>
+<body><div class="frame">
+  <div class="kicker">How Taaza Hawa is built</div>
+  <h1 style="font-size:34px">Five Lambdas, one table, and a promise that waits</h1>
+  <p class="sub" style="font-size:15px">Every service is there for one job. Solid arrows are the main path; dashed means optional or failure handling.</p>
+
+  <!-- row 1: sense -->
+  <div class="b sched" style="left:44px;top:170px;width:168px;height:78px"><h4>EventBridge Scheduler</h4><p>every 15 min, plus 06:30 and 17:30 IST</p></div>
+  <div class="b lam" style="left:250px;top:170px;width:180px;height:78px"><h4>Lambda · poller</h4><p>fetch, re-estimate, calibrate, resolve promises</p></div>
+  <div class="b ext" style="left:468px;top:170px;width:180px;height:78px"><h4>Upstream feeds</h4><p>WAQI stations · Open-Meteo CAMS · CPCB bulletin PDF</p></div>
+  <div class="b mon" style="left:686px;top:170px;width:150px;height:78px"><h4>CloudWatch</h4><p>alarm when the poller keeps failing</p></div>
+
+  <!-- row 2: the table -->
+  <div class="b db" style="left:250px;top:310px;width:398px;height:80px"><h4>DynamoDB · one pay-per-request table</h4><p>readings · leave-one-out errors · promises · task tokens · cached audio</p></div>
+
+  <!-- row 3: answer + promise -->
+  <div class="b web" style="left:44px;top:460px;width:168px;height:78px"><h4>Amplify Hosting</h4><p>Vite web app, Hindi first, rebuilt on every push</p></div>
+  <div class="b lam" style="left:250px;top:460px;width:180px;height:78px"><h4>Lambda · API</h4><p>behind a Function URL, no API Gateway</p></div>
+  <div class="b sf" style="left:468px;top:460px;width:180px;height:78px"><h4>Step Functions</h4><p><span class="mono" style="font-size:11.5px">waitForTaskToken</span>, parked ≤ 72 h at no compute cost</p></div>
+  <div class="b lam" style="left:686px;top:460px;width:150px;height:78px"><h4>Lambda · notify</h4><p>page result + SES email</p></div>
+
+  <!-- row 4: voice, words, timeout -->
+  <div class="b ai opt" style="left:44px;top:600px;width:168px;height:96px"><h4>Bedrock · Haiku 4.5</h4><p>optional: rephrases one Hindi sentence, can't change a number</p></div>
+  <div class="b ai" style="left:250px;top:600px;width:180px;height:96px"><h4>Polly · Kajal</h4><p>reads the answer aloud; text built server-side, cached</p></div>
+  <div class="b lam opt" style="left:468px;top:600px;width:180px;height:96px"><h4>Lambda · expire</h4><p>no reading in 72 h → "missed, still waiting"</p></div>
+
+  <svg width="880" height="750" viewBox="0 0 880 750">
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4a473f"/></marker>
+      <marker id="o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b8641b"/></marker>
+    </defs>
+    <g stroke="#4a473f" stroke-width="1.6" fill="none">
+      <path d="M212,209 L248,209" marker-end="url(#a)"/>
+      <path d="M430,209 L466,209" marker-end="url(#a)"/>
+      <path d="M340,248 L340,308" marker-end="url(#a)"/>
+      <path d="M212,499 L248,499" marker-end="url(#a)"/>
+      <path d="M340,458 L340,392" marker-start="url(#a)" marker-end="url(#a)"/>
+      <path d="M430,499 L466,499" marker-end="url(#a)"/>
+      <path d="M648,499 L684,499" marker-end="url(#a)"/>
+      <path d="M340,538 L340,598" marker-end="url(#a)"/>
+      <path d="M520,458 L520,392" marker-end="url(#a)"/>
+      <path d="M300,538 C300,575 200,560 150,598" stroke-dasharray="5 4" marker-end="url(#a)"/>
+      <path d="M558,538 L558,598" stroke-dasharray="5 4" marker-end="url(#a)"/>
+      <path d="M380,170 L380,150 L761,150 L761,168" stroke-dasharray="5 4" marker-end="url(#a)"/>
+    </g>
+    <path d="M600,392 L600,458" stroke="#b8641b" stroke-width="2.2" fill="none" marker-end="url(#o)"/>
+  </svg>
+  <span class="lbl" style="left:438px;top:186px">fetch</span>
+  <span class="lbl" style="left:350px;top:270px">write</span>
+  <span class="lbl" style="left:350px;top:416px">read</span>
+  <span class="lbl" style="left:438px;top:476px">start</span>
+  <span class="lbl" style="left:420px;top:416px">register λ saves token</span>
+  <span class="lbl" style="left:608px;top:406px;color:var(--ochre);font-weight:600">poller: SendTaskSuccess<br/>when the station reports again</span>
+  <span class="lbl" style="left:654px;top:476px">grade</span>
+
+  <div class="foot" style="position:absolute;left:44px;right:44px;bottom:16px;margin:0"><span>Region ap-south-1 (Mumbai) · infrastructure as code with AWS SAM</span><span>Taaza Hawa · Cubix33/taaza-hawa</span></div>
+</div></body></html>

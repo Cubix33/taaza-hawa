@@ -1,0 +1,61 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+  .frame { height: 590px; }
+  .grid { display: grid; grid-template-columns: 330px 1fr; gap: 26px; margin-top: 20px; }
+  pre { font: 500 13px/1.6 var(--mono); background: #1d1c19; color: #efece5; border-radius: 14px; padding: 16px 18px; }
+  pre .k { color: #84b6e4; } pre .s { color: #eacb79; } pre .c { color: #e39a52; } pre .x { color: #f08b7a; }
+  .cap { font: 500 12.5px/1.4 var(--sans); color: var(--muted); margin-top: 8px; }
+  svg text { font-family: "Mukta", sans-serif; }
+  ul { margin: 18px 0 0 18px; font: 400 14px/1.5 var(--sans); color: var(--ink2); }
+  ul b { color: var(--ink); }
+  .fix { margin-top: 14px; font: 500 13px/1.5 var(--mono); background: var(--go-bg); color: var(--go); border-radius: 10px; padding: 10px 12px; }
+</style></head>
+<body><div class="frame">
+  <div class="kicker">Thirty-six green tests, one wrong clock</div>
+  <h1 style="font-size:34px">WAQI's <span class="mono" style="font-size:30px">time.v</span> is not UTC</h1>
+  <p class="sub" style="font-size:15px">It is the station's <b>local clock time</b> stored as an epoch. Read it as UTC in Delhi and every reading looks 5 h 30 min younger than it is.</p>
+
+  <div class="grid">
+    <div>
+<pre>"time": {
+  <span class="k">"s"</span>:   <span class="s">"2026-10-09 06:00:00"</span>,
+  <span class="k">"tz"</span>:  <span class="s">"+05:30"</span>,
+  <span class="k">"v"</span>:   <span class="x">1791525600</span>,
+  <span class="k">"iso"</span>: <span class="s">"2026-10-09T06:00:00+05:30"</span>
+}
+<span class="c">// v decodes to 06:00 UTC = 11:30 IST
+// iso says 06:00 IST     = 00:30 UTC</span></pre>
+      <div class="cap">Same shape as WAQI's public demo feed, checked on 9 Oct 2026 (Shanghai: <span class="mono">v</span> = 14:00 "UTC", <span class="mono">iso</span> = 14:00+08:00).</div>
+      <div class="fix">ts = datetime.fromisoformat(<br/>&nbsp;&nbsp;d["time"]["iso"]).timestamp()</div>
+    </div>
+    <div>
+      <svg width="440" height="230" viewBox="0 0 440 230">
+        <!-- 04:00..13:00 IST mapped to 20..420 : 1h = 44.4px -->
+        <line x1="20" y1="120" x2="420" y2="120" stroke="#e6dfd2" stroke-width="2"/>
+        <g font-size="11.5" fill="#7b776d">
+          <text x="22" y="140" text-anchor="middle">04:00</text><text x="109" y="140" text-anchor="middle">06:00</text><text x="242" y="140" text-anchor="middle">09:00</text><text x="376" y="140" text-anchor="middle">12:00</text>
+        </g>
+        <!-- real measurement 06:00 x=109 ; now 09:30 x=264 ; bug thinks 11:30 x=353 -->
+        <rect x="109" y="86" width="155" height="22" rx="5" fill="#fbeedc" stroke="#b8641b"/>
+        <text x="186" y="101" text-anchor="middle" font-size="12.5" font-weight="600" fill="#b8641b">really 3 h 30 min old</text>
+        <circle cx="109" cy="120" r="6" fill="#2f6da8"/>
+        <text x="109" y="72" text-anchor="middle" font-size="12" fill="#2f6da8" font-weight="600">measured 06:00 IST</text>
+        <line x1="264" y1="60" x2="264" y2="200" stroke="#1d1c19" stroke-width="1.4"/>
+        <text x="264" y="52" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1d1c19">now 09:30</text>
+        <circle cx="353" cy="120" r="6" fill="#fbf8f2" stroke="#b03a2a" stroke-width="2"/>
+        <path d="M264,170 L349,170" stroke="#b03a2a" stroke-width="1.8" marker-end="url(#r)" fill="none"/>
+        <defs><marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#b03a2a"/></marker></defs>
+        <text x="353" y="100" text-anchor="middle" font-size="12" fill="#b03a2a" font-weight="600">what the app thought</text>
+        <text x="272" y="192" font-size="12" fill="#b03a2a">2 h in the future</text>
+        <text x="272" y="208" font-size="12" fill="#b03a2a" font-weight="600">→ clamped to "0 min old"</text>
+      </svg>
+      <ul>
+        <li>Range only appeared once a reading was <b>~8 h 30 min</b> old, not 3 h</li>
+        <li>Neighbours up to ~8 h 30 min old counted as <b>"live"</b> inputs</li>
+        <li>A reading from up to 5 h 30 min <b>before</b> a promise could grade it</li>
+        <li>Every test was green: <b>the tests made up their own timestamps</b></li>
+      </ul>
+    </div>
+  </div>
+</div></body></html>

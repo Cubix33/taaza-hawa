@@ -1,0 +1,23 @@
+/* Shared look for blog figures. Palette and type copied from web/src/style.css (light theme). */
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Mukta:wght@400;500;600;700&family=Tiro+Devanagari+Hindi&family=IBM+Plex+Mono:wght@500&display=swap");
+
+:root {
+  --bg: #fbf8f2; --bg2: #f2ede3; --surface: #ffffff;
+  --ink: #1d1c19; --ink2: #4a473f; --muted: #7b776d; --line: #e6dfd2;
+  --brand: #2f6da8; --sky-soft: #e8f1f8; --ochre: #b8641b; --ochre-soft: #fbeedc;
+  --go: #2d7d4f; --go-bg: #e5f3e9; --wait: #a9600f; --wait-bg: #fbeeda; --stay: #b03a2a; --stay-bg: #f9e4df;
+  --b0: #3fae6a; --b1: #9cc64b; --b2: #e2bb3f; --b3: #eb8f3c; --b4: #d4503c; --b5: #8e2340;
+  --serif: "Newsreader", Georgia, serif; --deva: "Tiro Devanagari Hindi", serif;
+  --sans: "Mukta", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #d9d4c9; font-family: var(--sans); color: var(--ink); }
+.frame { width: 880px; background: var(--bg); padding: 40px 44px; position: relative; overflow: hidden; }
+.kicker { font: 600 13px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--ochre); }
+h1 { font: 500 40px/1.08 var(--serif); letter-spacing: -.01em; margin: 10px 0 8px; }
+.sub { font: 400 17px/1.45 var(--sans); color: var(--ink2); max-width: 720px; }
+.mono { font-family: var(--mono); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 1px 2px rgba(29,28,25,.04), 0 10px 30px -18px rgba(29,28,25,.25); }
+.foot { margin-top: 22px; font: 400 12.5px/1.4 var(--sans); color: var(--muted); display: flex; justify-content: space-between; }
+.pill { display: inline-block; border-radius: 999px; padding: 3px 11px; font: 600 13px/1.4 var(--sans); }
+.go { background: var(--go-bg); color: var(--go); } .wait { background: var(--wait-bg); color: var(--wait); } .stay { background: var(--stay-bg); color: var(--stay); }
