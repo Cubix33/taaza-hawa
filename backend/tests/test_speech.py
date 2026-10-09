@@ -39,6 +39,31 @@ def test_fresh_station_says_when_the_number_was_measured():
     assert "measured" in speech.spoken_text(c, "en") and "नापा गया" in speech.spoken_text(c, "hi")
 
 
+def test_a_wait_answer_says_when_to_look_again():
+    _, c = card(2)  # fresh 230 -> WAIT
+    assert c["answer"] == "WAIT"
+    assert "Check again once the station sends its next number" in speech.spoken_text(c, "en")
+    assert "अगला नंबर आने पर फिर देखें" in speech.spoken_text(c, "hi")
+
+
+def test_every_spoken_answer_ends_with_the_whole_healthy_adults_line_even_when_truncated():
+    _, stale = card(1)
+    _, fresh = card(2)
+    very_long = dict(stale, name="National Institute of Malaria Research, Sector 8, Dwarka " * 12)
+    for c in (stale, fresh, very_long):
+        en, hi = speech.spoken_text(c, "en"), speech.spoken_text(c, "hi")
+        assert en.endswith("This is station air, not your street. Set for healthy adults. Not medical advice.")
+        assert hi.endswith("यह सलाह स्वस्थ वयस्कों के लिए है। डॉक्टरी सलाह नहीं।")
+        assert len(en) <= speech.MAX_CHARS and len(hi) <= speech.MAX_CHARS
+    assert len(speech.spoken_text(very_long, "en")) > 600  # the truncation path really ran
+
+
+def test_cant_tell_answers_make_no_healthy_adults_claim():
+    _, c = card(1)
+    c = dict(c, answer="UNKNOWN", interval=None)
+    assert "healthy adults" not in speech.spoken_text(c, "en")
+
+
 def test_synthesize_uses_kajal_neural_and_caches_by_text(monkeypatch):
     fake = FakePolly()
     monkeypatch.setattr(speech, "_client", lambda: fake)

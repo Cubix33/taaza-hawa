@@ -1,0 +1,45 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+  .frame { height: 462px; padding: 44px 48px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 34px; align-items: center; }
+  .frame::before { content: ""; position: absolute; inset: 0; background:
+      radial-gradient(520px 300px at 86% 8%, rgba(235,143,60,.20), transparent 70%),
+      radial-gradient(600px 340px at 10% 110%, rgba(47,109,168,.10), transparent 70%); }
+  .left, .right { position: relative; }
+  h1 { font-size: 58px; line-height: 1.0; margin: 14px 0 16px; }
+  h1 em { font-style: italic; color: var(--ochre); }
+  .sub { font-size: 18px; }
+  .meta { margin-top: 22px; font: 500 13px/1.5 var(--sans); color: var(--muted); }
+  .meta b { color: var(--ink2); font-weight: 600; }
+  .phone { padding: 22px 22px 18px; transform: rotate(1.2deg); }
+  .q { font: 400 26px/1.2 var(--deva); }
+  .qen { font: 400 14px/1.3 var(--sans); color: var(--muted); margin-top: 2px; }
+  .ans { margin: 14px 0 10px; font-size: 15px; padding: 6px 14px; }
+  .line { font: 500 15px/1.45 var(--sans); color: var(--ink2); }
+  .line b { color: var(--ink); }
+  .age { margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .stamp { font: 500 13px/1 var(--mono); border: 1.5px solid var(--ochre); color: var(--ochre); padding: 6px 9px; border-radius: 8px; }
+  .wrong { font: 500 13px/1 var(--mono); color: var(--stay); padding: 6px 9px; border: 1.5px dashed var(--stay); border-radius: 8px; text-decoration: line-through; transform: rotate(-4deg); opacity: .9; }
+  .btn { margin-top: 16px; display: block; text-align: center; background: var(--brand); color: #fff; font: 600 15px/1 var(--sans); padding: 12px; border-radius: 12px; }
+  .bands { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; display: flex; }
+  .bands i { flex: 1; }
+</style></head>
+<body><div class="frame">
+  <div class="left">
+    <div class="kicker">Taaza Hawa · ताज़ा हवा · Delhi air</div>
+    <h1>The number<br/>has an <em>age.</em></h1>
+    <p class="sub">A Delhi air-quality app that says how old every reading is, gives an honest range when it's stale, and grades itself in public with AWS Step Functions. Also: the clock bug that every test missed.</p>
+    <p class="meta"><b>WeMakeDevs × AWS Environmental Hacks 2026</b> · Track: Air · 8–11 Oct 2026</p>
+  </div>
+  <div class="right">
+    <div class="card phone">
+      <div class="q">अभी बाहर जाऊँ?</div>
+      <div class="qen">Can I go outside right now?</div>
+      <span class="pill wait ans">Not yet · wait for the air to improve</span>
+      <div class="line">Anand Vihar · AQI <b>probably 232–264</b><br/>3 live neighbours + bias-corrected CAMS</div>
+      <div class="age"><span class="stamp">measured 31 h ago</span><span class="wrong">0 min old</span></div>
+      <span class="btn">Check it and tell me</span>
+    </div>
+  </div>
+  <div class="bands"><i style="background:var(--b0)"></i><i style="background:var(--b1)"></i><i style="background:var(--b2)"></i><i style="background:var(--b3)"></i><i style="background:var(--b4)"></i><i style="background:var(--b5)"></i></div>
+</div></body></html>

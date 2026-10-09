@@ -22,26 +22,35 @@ SAY = {
     "en": {"GO": "Yes, go ahead.", "WAIT": "Not yet. Wait for air to improve.", "STAY": "No. Stay in today.", "UNKNOWN": "We can't say for sure right now."},
 }
 ADVICE = {
-    "hi": {"GO": "हवा ठीक है। बाहर जाना, दौड़ना या खेलना ठीक है।",
+    "hi": {"GO": "हवा ठीक है। बाहर टहलना, दौड़ना या साइकिल चलाना ठीक है।",
            "WAIT": "अभी हवा खराब है। बाहरी मेहनत या दौड़-सैर से पहले हवा की स्थिति सुधरने का इंतज़ार करें।",
            "STAY": "हवा बहुत खराब है। आज बाहर कसरत या खेल न करें।",
            "UNKNOWN": "इस स्टेशन का भरोसेमंद नंबर अभी नहीं है। पास का कोई और स्टेशन चुनें।"},
-    "en": {"GO": "The air is OK. Going out, running or playing is fine.",
+    "en": {"GO": "The air is OK. A walk, run or ride outside is fine.",
            "WAIT": "The air is poor right now. Wait for conditions to improve or exercise caution before strenuous outdoor activity.",
            "STAY": "The air is very poor. Skip outdoor exercise and games today.",
            "UNKNOWN": "We don't have a reliable number for this station right now. Pick another nearby station."},
 }
+WAIT_NEXT = {
+    "hi": {"fresh": "स्टेशन का अगला नंबर आने पर फिर देखें; स्टेशन आमतौर पर हर घंटे नंबर भेजते हैं।",
+           "old": "स्टेशन का नया नंबर आने पर फिर देखें।"},
+    "en": {"fresh": "Check again once the station sends its next number; stations usually send one every hour.",
+           "old": "Check again once the station sends a new number."},
+}
 FOOT = {"hi": "यह स्टेशन की हवा है, आपकी गली की नहीं।", "en": "This is station air, not your street."}
+HEALTHY = {"hi": "यह सलाह स्वस्थ वयस्कों के लिए है। डॉक्टरी सलाह नहीं।", "en": "Set for healthy adults. Not medical advice."}
 
 
 def spoken_text(card: dict, lang: str) -> str:
     """Plain-words script for a card (same facts as the on-screen answer and its 'why' lines)."""
     lang = lang if lang in LANG_CODE else "hi"
     ans = card.get("answer", "UNKNOWN")
+    fresh = card.get("state") == "fresh"
     parts = [card.get("name", ""), SAY[lang][ans], ADVICE[lang][ans]]
+    if ans == "WAIT":
+        parts.append(WAIT_NEXT[lang]["fresh" if fresh else "old"])
     age = card.get("age_min")
     iv = card.get("interval")
-    fresh = card.get("state") == "fresh"
     if lang == "hi":
         band = card.get("band_hi")
         if iv and band:
@@ -60,8 +69,9 @@ def spoken_text(card: dict, lang: str) -> str:
         if age is not None:
             parts.append(f"This number was measured {human_age_en(age)} ago." if fresh
                          else f"This station's last number came {human_age_en(age)} ago, so this is our estimate.")
-    parts.append(FOOT[lang])
-    return " ".join(p for p in parts if p)[:MAX_CHARS]
+    foot = FOOT[lang] if ans == "UNKNOWN" else f"{FOOT[lang]} {HEALTHY[lang]}"
+    body = " ".join(p for p in parts if p)[: MAX_CHARS - len(foot) - 1].rstrip()
+    return f"{body} {foot}"  # the footer is never truncated away
 
 
 def _client():

@@ -1,0 +1,42 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+  .frame { height: 660px; }
+  svg text { font-family: "Mukta", sans-serif; }
+  .notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 8px; }
+  .note { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: 400 13px/1.4 var(--sans); color: var(--ink2); }
+  .note b { display: block; font: 600 20px/1.1 var(--serif); color: var(--ink); margin-bottom: 2px; }
+</style></head>
+<body><div class="frame">
+  <div class="kicker">The track record, 9 Oct 2026, 13:13 IST</div>
+  <h1 style="font-size:34px">27 out of 27 is a bug report</h1>
+  <p class="sub" style="font-size:15px">Every check was right. Below: all 23 graded morning ranges for 9 Oct from the live <span class="mono" style="font-size:13px">/scoreboard</span>, with the station's real reading as a dot.</p>
+  <svg id="c" width="792" height="350" viewBox="0 0 792 350" style="margin-top:8px"></svg>
+  <div class="notes">
+    <div class="note"><b>90 points</b>the width of every range: calibration was still warming up, so all 24 got the same fallback width</div>
+    <div class="note"><b>18 of 23</b>ranges cross a band edge (100 or 200), so one range covers two different answers</div>
+    <div class="note"><b>37–87 %</b>where each real reading landed inside its range: none came near an edge</div>
+  </div>
+</div>
+<script>
+const rows = [{"n":"Mother Dairy Plant","lo":80,"hi":170,"a":124},{"n":"Anand Vihar","lo":92,"hi":182,"a":144},{"n":"PGDAV College","lo":104,"hi":194,"a":153},{"n":"Dr. Karni Singh","lo":121,"hi":211,"a":154},{"n":"Aurobindo Marg","lo":109,"hi":199,"a":154},{"n":"DITE Wazirpur","lo":99,"hi":189,"a":157},{"n":"Satyawati","lo":104,"hi":194,"a":157},{"n":"Dhyan Chand","lo":102,"hi":192,"a":158},{"n":"DITE Okhla","lo":113,"hi":203,"a":163},{"n":"Sonia Vihar","lo":113,"hi":203,"a":164},{"n":"Mandir Marg","lo":117,"hi":207,"a":166},{"n":"ITI Shahdra","lo":107,"hi":197,"a":167},{"n":"Narela","lo":122,"hi":212,"a":169},{"n":"Pusa","lo":116,"hi":206,"a":173},{"n":"JLN Stadium","lo":120,"hi":210,"a":174},{"n":"Rohini","lo":119,"hi":209,"a":176},{"n":"Alipur","lo":114,"hi":204,"a":178},{"n":"Najafgarh","lo":113,"hi":203,"a":178},{"n":"Punjabi Bagh","lo":134,"hi":224,"a":181},{"n":"Mundka","lo":120,"hi":210,"a":183},{"n":"Pooth Khurd","lo":124,"hi":214,"a":185},{"n":"R.K. Puram","lo":127,"hi":217,"a":197},{"n":"Dwarka Sec 8","lo":127,"hi":217,"a":205}];
+const svg = document.getElementById('c'), NS = 'http://www.w3.org/2000/svg';
+const X0 = 46, X1 = 690, Y0 = 250, Y1 = 14, A0 = 60, A1 = 240;
+const y = v => Y0 - (v - A0) * (Y0 - Y1) / (A1 - A0);
+const el = (t, a, txt) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; svg.appendChild(e); return e; };
+// CPCB bands: 51-100 Satisfactory, 101-200 Moderate, 201-300 Poor
+[[60,100,'#9cc64b','Satisfactory · Go'],[100,200,'#e2bb3f','Moderate · Go'],[200,240,'#eb8f3c','Poor · Wait']].forEach(([lo,hi,c,l]) => {
+  el('rect', {x: X0, y: y(hi), width: X1 - X0, height: y(lo) - y(hi), fill: c, opacity: .13});
+  el('text', {x: X1 + 8, y: (y(hi) + y(lo)) / 2 + 4, 'font-size': 11.5, fill: '#7b776d'}, l);
+});
+[100, 200].forEach(v => el('line', {x1: X0, x2: X1, y1: y(v), y2: y(v), stroke: '#b8641b', 'stroke-dasharray': '3 4', 'stroke-width': 1}));
+[60, 100, 150, 200, 240].forEach(v => el('text', {x: X0 - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: '#7b776d'}, v));
+const step = (X1 - X0 - 40) / rows.length;
+rows.forEach((r, i) => {
+  const cx = X0 + 20 + step * i + step / 2;
+  el('rect', {x: cx - 9, y: y(r.hi), width: 18, height: y(r.lo) - y(r.hi), rx: 4, fill: '#fbeedc', stroke: '#b8641b', 'stroke-width': 1.1});
+  el('circle', {cx, cy: y(r.a), r: 4.6, fill: '#2d7d4f'});
+  el('text', {x: cx, y: Y0 + 12, 'font-size': 10, fill: '#4a473f', transform: `rotate(-55 ${cx} ${Y0 + 12})`, 'text-anchor': 'end'}, r.n);
+});
+</script>
+</body></html>

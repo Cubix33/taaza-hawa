@@ -238,6 +238,9 @@ main.route-home { padding-bottom: 0; }
 .ans { margin: 10px 0 6px; font: 500 clamp(2.2rem, 3.6vw, 3.3rem)/1.1 var(--serif); letter-spacing: -.02em; color: var(--tone, var(--ink)); }
 html[lang="hi"] .ans { line-height: 1.25; }
 .advice { margin: 6px 0 0; font-size: 1.1rem; line-height: 1.55; max-width: 46ch; color: var(--ink); }
+.wait-next { margin: 10px 0 0; padding: 8px 12px; max-width: 52ch; border-left: 3px solid currentColor; border-radius: 0 8px 8px 0; background: rgba(240, 162, 120, .12); font-size: .98rem; line-height: 1.5; }
+.healthy-note { margin: 14px 0 0; font: 500 .8rem var(--mono); color: var(--muted); }
+.sheet .healthy-note { color: rgba(29, 28, 25, .68); }
 .why-box { margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--line); }
 .why-t { margin: 0 0 8px; font: 500 .8rem var(--mono); color: var(--muted); }
 .sent { margin: 14px 0 0; color: var(--ink2); line-height: 1.65; max-width: 48ch; }
@@ -523,7 +526,7 @@ html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
 
 /* ===== mobile pass ===== */
 @media (max-width: 1080px) {
-  /* check page: the answer, then "Check it and tell me", then the details; the long station list last */
+  /* check page: the answer, then "Hold me to this", then the details; the long station list last */
   .cols { display: flex; flex-direction: column; gap: 20px; }
   .col-a, .col-b { display: contents; }
   .hero-card { order: 1; } .col-b > * { order: 2; } .facts { order: 3; } .allst { order: 4; }
@@ -577,6 +580,8 @@ html[lang="hi"] .aqi-box h3 { font-family: var(--deva); font-weight: 400; }
 .acc-big.ok { color: var(--go); } .acc-big.no { color: var(--stay); } .acc-big.few { color: var(--muted); }
 .acc-meta { display: grid; gap: 2px; font-weight: 600; }
 .acc-bar { position: relative; height: 12px; margin: 18px 0 28px; border-radius: 6px; background: var(--bg2); }
+.acc-warm { margin: -6px 0 18px; padding: 10px 14px; border-radius: 10px; background: var(--bg2); font-size: .92rem; line-height: 1.55; color: var(--ink2); }
+.rs-n { display: block; font: 500 .74rem var(--mono); color: var(--muted); text-align: center; }
 .acc-bar i { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: var(--go); }
 .acc-bar em, .acc-mini em { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--ink); }
 .acc-bar em span { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; white-space: nowrap; font: 500 .74rem var(--mono); color: var(--ink2); font-style: normal; }

@@ -1,0 +1,62 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+  .frame { height: 620px; }
+  svg text { font-family: "Mukta", sans-serif; }
+  .t { font-size: 12.5px; fill: #4a473f; } .tm { font-size: 11.5px; fill: #7b776d; } .tb { font-size: 13px; font-weight: 600; fill: #1d1c19; }
+</style></head>
+<body><div class="frame">
+  <div class="kicker">"Check it and tell me"</div>
+  <h1 style="font-size:34px">A promise is a waiting execution</h1>
+  <p class="sub" style="font-size:15px">The station's own next reading is the judge. Only a reading <b>measured after</b> the promise can grade it.</p>
+
+  <svg width="792" height="462" viewBox="0 0 792 462" style="margin-top:14px">
+    <!-- axes: x from -32h..+12h mapped to 60..770 ; promise at 0h -> x = 60 + 32*(710/44) = 576 -->
+    <!-- y AQI 160..320 mapped to 300..40 -->
+    <line x1="60" y1="300" x2="770" y2="300" stroke="#e6dfd2"/>
+    <g class="tm">
+      <text x="60" y="318">−32 h</text><text x="318" y="318" text-anchor="middle">−16 h</text>
+      <text x="576" y="318" text-anchor="middle" style="font-weight:600;fill:#1d1c19">06:30 · you tap</text><text x="770" y="318" text-anchor="end">+12 h</text>
+    </g>
+    <g class="tm"><text x="52" y="304" text-anchor="end">160</text><text x="52" y="174" text-anchor="end">240</text><text x="52" y="44" text-anchor="end">320</text></g>
+    <line x1="60" y1="170" x2="770" y2="170" stroke="#efebe3"/><line x1="60" y1="40" x2="770" y2="40" stroke="#efebe3"/>
+
+    <!-- CPCB Poor band starts at 201 -> y = 300 - (201-160)*1.625 = 233 -->
+    <line x1="60" y1="233" x2="770" y2="233" stroke="#eb8f3c" stroke-dasharray="3 4"/>
+    <text x="566" y="250" class="tm" text-anchor="end" style="fill:#b8641b">201 · "Poor" begins (CPCB)</text>
+
+    <!-- last real reading at -31h (x=76), value 205 -> y=227 -->
+    <circle cx="76" cy="227" r="6" fill="#2f6da8"/>
+    <text x="88" y="214" class="t">last reading the station sent</text>
+    <text x="88" y="200" class="tb">31 hours old at 06:30</text>
+    <path d="M82,227 C220,227 420,240 560,240" stroke="#2f6da8" stroke-dasharray="2 5" fill="none"/>
+    <text x="300" y="286" class="tm">station silent: no new hourly value</text>
+
+    <!-- estimate band 232..264 from x=576 to 770 : y(232)=183, y(264)=131 -->
+    <rect x="576" y="131" width="194" height="52" fill="#fbeedc" stroke="#b8641b" stroke-width="1.2" rx="4"/>
+    <text x="586" y="124" class="tb" style="fill:#b8641b">estimate: 232–264 (80 % range)</text>
+    <line x1="576" y1="131" x2="770" y2="131" stroke="#b8641b" stroke-width="2.4"/>
+    <text x="586" y="104" class="tm">advice uses the top of the range</text>
+
+    <!-- backfilled hour at -2h (x=544) value 281 -> y=103 -->
+    <circle cx="544" cy="103" r="6" fill="#fbf8f2" stroke="#7b776d" stroke-width="2"/>
+    <line x1="537" y1="96" x2="551" y2="110" stroke="#b03a2a" stroke-width="2"/>
+    <text x="536" y="70" class="t" text-anchor="end">a backfilled hour, measured</text>
+    <text x="536" y="85" class="t" text-anchor="end"><tspan style="font-weight:600">before</tspan> the promise: can't grade it</text>
+
+    <!-- fresh reading at +6h (x=673) value 251 -> y=152 -->
+    <circle cx="673" cy="152" r="7" fill="#2d7d4f"/>
+    <text x="682" y="165" class="tb" style="fill:#2d7d4f">251 → RIGHT</text>
+    <line x1="576" y1="40" x2="576" y2="300" stroke="#1d1c19" stroke-width="1.2"/>
+
+    <!-- execution strip -->
+    <text x="60" y="352" class="tb">Step Functions execution</text>
+    <rect x="576" y="364" width="97" height="26" rx="6" fill="#e8f1f8" stroke="#2f6da8"/>
+    <text x="624" y="381" text-anchor="middle" class="t" style="font-weight:600;fill:#2f6da8">RUNNING</text>
+    <rect x="673" y="364" width="97" height="26" rx="6" fill="#e5f3e9" stroke="#2d7d4f"/>
+    <text x="721" y="381" text-anchor="middle" class="t" style="font-weight:600;fill:#2d7d4f">SUCCEEDED</text>
+    <text x="566" y="381" text-anchor="end" class="t">parked on waitForTaskToken, token saved in DynamoDB →</text>
+    <text x="60" y="414" class="t">The poller sees a newer timestamp → reads the token → SendTaskSuccess with the real value.</text><text x="60" y="432" class="t">The grader: inside the range = RIGHT, outside = MISSED by N.</text>
+    <text x="60" y="452" class="tm">Nothing within 72 h → the timeout branch records "missed, still waiting". Values are illustrative.</text>
+  </svg>
+</div></body></html>
