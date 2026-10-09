@@ -7,8 +7,8 @@ from __future__ import annotations
 from .aqi import LABEL
 from .freshness import human_age_en, human_age_hi
 
-ANSWER_HI = {"GO": "जाओ", "WAIT": "10 बजे के बाद", "STAY": "अंदर रहो", "UNKNOWN": "पता नहीं"}
-ANSWER_EN = {"GO": "Go", "WAIT": "Wait till 10 AM", "STAY": "Stay inside", "UNKNOWN": "Can't tell"}
+ANSWER_HI = {"GO": "जाओ", "WAIT": "सुधरने का इंतज़ार करें", "STAY": "अंदर रहो", "UNKNOWN": "पता नहीं"}
+ANSWER_EN = {"GO": "Go", "WAIT": "Wait for air to improve", "STAY": "Stay inside", "UNKNOWN": "Can't tell"}
 QUESTION_HI = "अभी बाहर जाऊँ?"
 QUESTION_EN = "Can I go outside right now?"
 
@@ -49,6 +49,6 @@ def yesterday_line(lo: int, hi_: int, status: str, actual: int | None, miss_by: 
         return (f"कल: कहा {lo}–{hi_}, स्टेशन ने बताया {actual} → चूक by {miss_by}",
                 f"Yesterday: said {lo}–{hi_}, station read {actual} → Missed by {miss_by}")
     if status == "MISSED_WAITING":
-        return (f"कल: कहा {lo}–{hi_} → चूक, रीडिंग नहीं आई",
-                f"Yesterday: said {lo}–{hi_} → Missed, no fresh reading arrived")
+        return (f"कल: कहा {lo}–{hi_} → परख नहीं पाए, कोई नई रीडिंग नहीं आई",
+                f"Yesterday: said {lo}–{hi_} → Couldn't verify, no fresh reading arrived")
     return (f"कल: कहा {lo}–{hi_} → परख जारी", f"Yesterday: said {lo}–{hi_} → still pending")

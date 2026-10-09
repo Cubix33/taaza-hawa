@@ -142,9 +142,14 @@ def test_accuracy_counts_only_graded_promises():
     cams = seed(s)
     hit = service.create_hold(s, 1, NOW)
     miss = service.create_hold(s, 4, NOW)
+    waiting = service.create_hold(s, 2, NOW)
     service.ingest(s, [rd(1, "Dwarka Sector 8", 28.5710, 77.0720, NOW + 900, round((hit["lo"] + hit["hi"]) / 2)),
                        rd(4, "Punjabi Bagh", 28.6700, 77.1300, NOW + 900, 500)], cams, NOW + 1000)
     service.create_hold(s, 1, NOW + 2000)  # still pending: not counted
+    waiting_item = s.get(f"PRED#{2}", f"HOLD#{waiting['id']}")
+    waiting_item["status"] = "MISSED_WAITING"
+    s.put(f"PRED#{2}", f"HOLD#{waiting['id']}", waiting_item)
+
     acc = service.accuracy(s)
-    assert (acc["hits"], acc["graded"]) == (1, 2) and acc["target"] == 0.8
-    assert {r["uid"]: (r["hits"], r["graded"]) for r in acc["stations"]} == {1: (1, 1), 4: (0, 1)}
+    assert (acc["hits"], acc["graded"], acc["unverified"]) == (1, 2, 1) and acc["target"] == 0.8
+    assert {r["uid"]: (r["hits"], r["graded"], r.get("unverified", 0)) for r in acc["stations"]} == {1: (1, 1, 0), 4: (0, 1, 0), 2: (0, 0, 1)}

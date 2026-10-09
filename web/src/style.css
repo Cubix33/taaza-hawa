@@ -164,12 +164,12 @@ html[lang="hi"] .figure b { font-family: var(--deva); font-weight: 400; }
 .map-legend span { display: inline-flex; align-items: center; gap: 8px; }
 .lg-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--b2); }
 .lg-ring { width: 12px; height: 12px; border-radius: 50%; border: 2px dashed var(--ochre); }
-.ledger { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 2px solid var(--ink); }
-.ledger div { padding: 18px 18px 6px 0; }
-.ledger div + div { padding-left: 18px; border-left: 1px solid var(--line); }
-.ledger b { display: block; font: 500 3.4rem/1 var(--serif); color: var(--muted); }
-.ledger b.ok { color: var(--go); } .ledger b.no { color: var(--stay); }
-.ledger span { font-size: .92rem; color: var(--ink2); }
+.ledger { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid var(--ink); }
+.ledger div { padding: 18px 12px 6px 0; }
+.ledger div + div { padding-left: 12px; border-left: 1px solid var(--line); }
+.ledger b { display: block; font: 500 3.2rem/1 var(--serif); color: var(--muted); }
+.ledger b.ok { color: var(--go); } .ledger b.no { color: var(--stay); } .ledger b.un { color: var(--muted); }
+.ledger span { font-size: .88rem; color: var(--ink2); }
 .ticket { position: relative; display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center; margin-top: 22px; padding: 16px 22px; border-radius: 12px; background: var(--surface); border: 1.5px dashed var(--line); font-size: .95rem; }
 .ticket::before, .ticket::after { content: ""; position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; background: var(--bg2); border: 1px solid var(--line); }
 .ticket::before { left: -9px; } .ticket::after { right: -9px; }
@@ -356,7 +356,7 @@ html[lang="hi"] .holdbox h3 { font-family: var(--deva); font-weight: 400; }
 .tally div { padding: 14px 16px; border-radius: 12px; background: var(--bg); }
 .tally b { display: block; font: 500 2.2rem/1.1 var(--serif); }
 .tally span { font-size: .86rem; color: var(--muted); }
-.t-hit b { color: var(--go); } .t-miss b { color: var(--stay); } .t-pend b { color: var(--muted); }
+.t-hit b { color: var(--go); } .t-miss b { color: var(--stay); } .t-unverified b { color: var(--muted); } .t-pend b { color: var(--muted); }
 .rec-cols { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 20px; align-items: start; margin-top: 16px; }
 .grid { padding: 8px 12px 16px; overflow-x: auto; }
 .g-head, .g-row { display: grid; grid-template-columns: minmax(170px, 1.4fr) repeat(4, minmax(64px, 1fr)); align-items: center; gap: 4px; padding: 9px 12px; }
@@ -366,7 +366,7 @@ html[lang="hi"] .holdbox h3 { font-family: var(--deva); font-weight: 400; }
 .g-name { font-size: .96rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .g-name:hover { color: var(--brand); }
 .d { justify-self: center; display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 99px; font: 500 .72rem var(--mono); }
-.d-hit { background: var(--go-bg); color: var(--go); } .d-miss { background: var(--stay-bg); color: var(--stay); }
+.d-hit { background: var(--go-bg); color: var(--go); } .d-miss { background: var(--stay-bg); color: var(--stay); } .d-unverified { background: var(--bg2); color: var(--muted); border: 1px solid var(--line); }
 .d-pend { background: transparent; border: 2px dashed var(--line); min-width: 22px; height: 22px; }
 .d-none { min-width: 6px; width: 6px; height: 6px; padding: 0; background: var(--line); }
 .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 14px 8px 0; font-size: .8rem; color: var(--muted); }
@@ -378,7 +378,7 @@ html[lang="hi"] .recent h3 { font-family: var(--deva); font-weight: 400; }
 .recent li b { display: block; font-size: .96rem; } .recent li small { color: var(--muted); font-size: .8rem; }
 .rc-said { font: 500 .82rem var(--mono); color: var(--ink2); align-self: center; }
 .recent em { grid-column: 1 / -1; font-style: normal; font-size: .86rem; font-weight: 700; color: var(--muted); }
-.recent em.ok { color: var(--go); } .recent em.no { color: var(--stay); }
+.recent em.ok { color: var(--go); } .recent em.no { color: var(--stay); } .recent em.un { color: var(--muted); }
 .empty-state { display: grid; place-items: center; min-height: 220px; text-align: center; }
 
 /* ---------- about ---------- */

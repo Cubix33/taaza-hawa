@@ -1,7 +1,7 @@
 """CPCB National AQI sub-index maths and the fixed band -> answer mapping.
 
 Decision rule (printed on the audit page, never model-chosen):
-  Good/Satisfactory/Moderate -> GO, Poor -> WAIT (till ~10), Very Poor/Severe -> STAY.
+  Good/Satisfactory/Moderate -> GO, Poor -> WAIT (wait for air to improve), Very Poor/Severe -> STAY.
 """
 from __future__ import annotations
 

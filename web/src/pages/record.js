@@ -9,9 +9,11 @@ export function load() {
 
 function dot(d) {
   if (!d) return `<span class="d d-none" aria-hidden="true"></span>`;
-  const tip = `${t("said")}: AQI ${d.lo}–${d.hi}${d.actual != null ? ` · ${t("read")}: AQI ${d.actual}` : ""}`;
-  const cls = { HIT: "d-hit", MISSED: "d-miss", MISSED_WAITING: "d-miss", PENDING: "d-pend" }[d.status];
-  const label = d.status === "HIT" ? "✓" : d.status === "MISSED" ? d.miss_by : d.status === "MISSED_WAITING" ? "✗" : "";
+  const tip = d.status === "MISSED_WAITING"
+    ? `${t("said")}: AQI ${d.lo}–${d.hi} · ${t("unverifiedTip")}`
+    : `${t("said")}: AQI ${d.lo}–${d.hi}${d.actual != null ? ` · ${t("read")}: AQI ${d.actual}` : ""}`;
+  const cls = { HIT: "d-hit", MISSED: "d-miss", MISSED_WAITING: "d-unverified", PENDING: "d-pend" }[d.status];
+  const label = d.status === "HIT" ? "✓" : d.status === "MISSED" ? d.miss_by : d.status === "MISSED_WAITING" ? "—" : "";
   return `<span class="d ${cls}" title="${esc(tip)}">${label}</span>`;
 }
 
@@ -25,14 +27,13 @@ function ring(rate) {
 export function view() {
   const real = state.board;
   if (!real) return `<section class="page-head wrap"><div><p class="eyebrow">${t("navRecord")}</p><h1 class="page-title">${t("board")}</h1></div></section><div class="wrap"><div class="panel sk"><div class="sk-g"></div></div></div>`;
-  // Until 5 real checks exist, show a clearly labelled example (switchable); never mix it with real data.
-  const realGraded = real.accuracy?.graded ?? (real.tally.HIT + real.tally.MISSED + real.tally.MISSED_WAITING);
-  const canExample = realGraded < FEW;
-  const example = canExample && state.recordView !== "real";
+  // Default to real results; examples are an explicit user choice.
+  const realGraded = real.accuracy?.graded ?? (real.tally.HIT + real.tally.MISSED);
+  const canExample = true;
+  const example = state.recordView === "example";
   const b = example ? exampleBoard(real) : real;
   const k = b.tally;
-  const miss = k.MISSED + k.MISSED_WAITING;
-  const graded = k.HIT + miss;
+  const graded = k.HIT + k.MISSED;
   const rate = graded >= 5 ? Math.round((k.HIT / graded) * 100) : null;
   const anyRow = b.rows.some((r) => Object.keys(r.days).length);
   const fmt = (d) => new Date(d + "T00:00:00").toLocaleDateString(hi() ? "hi-IN" : "en-IN", { day: "numeric", month: "short" });
@@ -47,7 +48,8 @@ export function view() {
       <div class="rs-ring">${ring(rate)}<span>${rate != null ? t("rateL") : t("stRatePending")}</span></div>
       <div class="tally">
         <div class="t-hit"><b>${k.HIT}</b><span>${t("tallyHit")}</span></div>
-        <div class="t-miss"><b>${miss}</b><span>${t("tallyMiss")}</span></div>
+        <div class="t-miss"><b>${k.MISSED}</b><span>${t("tallyMiss")}</span></div>
+        <div class="t-unverified"><b>${k.MISSED_WAITING || 0}</b><span>${t("tallyUnverified")}</span></div>
         <div class="t-pend"><b>${k.PENDING}</b><span>${t("tallyPend")}</span></div>
       </div>
       ${b.poll ? `<p class="muted small rs-poll">${t("feedAge")}: ${since(b.poll.at)} ${t("ago")}</p>` : ""}
@@ -58,12 +60,12 @@ export function view() {
       ${anyRow ? `<section class="panel grid">
           <div class="g-head"><span></span>${b.dates.map((d) => `<span>${fmt(d)}</span>`).join("")}</div>
           ${b.rows.map((r) => `<div class="g-row"><a class="g-name" href="#/check?s=${r.uid}">${esc(r.name)}</a>${b.dates.map((d) => dot(r.days[d])).join("")}</div>`).join("")}
-          <p class="legend"><span class="d d-hit">✓</span>${t("legHit")} <span class="d d-miss">12</span>${t("legMiss")} <span class="d d-pend"></span>${t("legPend")}</p>
+          <p class="legend"><span class="d d-hit">✓</span>${t("legHit")} <span class="d d-miss">12</span>${t("legMiss")} <span class="d d-unverified">—</span>${t("legUnverified")} <span class="d d-pend"></span>${t("legPend")}</p>
         </section>` : `<section class="panel empty-state"><p class="muted">${t("nodata")}</p></section>`}
       <section class="panel recent">
         <h3>${t("recentTitle")}</h3>
         ${b.recent_holds?.length ? `<ul>${b.recent_holds.map((h) => {
-          const st = h.status === "HIT" ? ["ok", t("hit")] : h.status === "PENDING" ? ["", t("s2")] : h.status === "MISSED" ? ["no", t("missedBy", h.miss_by)] : ["no", t("missedWaiting")];
+          const st = h.status === "HIT" ? ["ok", t("hit")] : h.status === "PENDING" ? ["", t("s2")] : h.status === "MISSED" ? ["no", t("missedBy", h.miss_by)] : ["un", t("missedWaiting")];
           return `<li><div><b>${esc(h.name)}</b><small>${since(h.created_ts)} ${t("ago")}</small></div>
             <span class="rc-said">AQI ${Math.round(h.lo)}–${Math.round(h.hi)}${h.actual != null ? ` → ${Math.round(h.actual)}` : ""}</span>
             <em class="${st[0]}">${st[1]}</em></li>`;
@@ -78,8 +80,9 @@ const FEW = 5;
 function accuracyView(acc) {
   if (!acc) return "";
   const pct = (h, g) => Math.round((h / g) * 100);
-  const head = !acc.graded ? `<p class="muted">${t("accNone")}</p>` : `
-    <div class="acc-top"><b>${t("accTotal", acc.hits, acc.graded)}</b>${acc.graded < FEW ? `<span class="muted small">${t("accFew", acc.graded)}</span>` : ""}</div>
+  const unv = acc.unverified ? ` · <span class="muted small">${t("accUnverifiedNote", acc.unverified)}</span>` : "";
+  const head = !acc.graded ? `<p class="muted">${t("accNone")}${unv}</p>` : `
+    <div class="acc-top"><b>${t("accTotal", acc.hits, acc.graded)}</b>${acc.graded < FEW ? `<span class="muted small">${t("accFew", acc.graded)}</span>` : ""}${unv}</div>
     <div class="acc-bar"><i style="width:${pct(acc.hits, acc.graded)}%"></i><em style="left:80%"><span>${t("accTarget")}</span></em></div>`;
   return `<section class="panel acc">
     <h2 class="h2s">${t("accTitle")}</h2>
@@ -87,14 +90,14 @@ function accuracyView(acc) {
     ${head}
     ${acc.stations.length ? `<p class="acc-per">${t("accPer")}</p><ul class="acc-list">${acc.stations.map((s) => `<li class="${s.graded < FEW ? "few" : ""}">
       <a href="#/check?s=${s.uid}">${esc(s.name)}</a>
-      <span class="acc-mini"><i style="width:${pct(s.hits, s.graded)}%"></i><em style="left:80%"></em></span>
-      <b>${s.graded < FEW ? "—" : `${pct(s.hits, s.graded)}%`}</b><small>${t("accN", s.graded)}</small></li>`).join("")}</ul>` : ""}
+      <span class="acc-mini"><i style="width:${pct(s.hits, s.graded || 1)}%"></i><em style="left:80%"></em></span>
+      <b>${s.graded < FEW ? "—" : `${pct(s.hits, s.graded)}%`}</b><small>${t("accN", s.graded)}${s.unverified ? ` (+${s.unverified} ${t("accUnv")})` : ""}</small></li>`).join("")}</ul>` : ""}
   </section>`;
 }
 
 export function bind() {
   document.getElementById("exToggle")?.addEventListener("click", () =>
-    set({ recordView: state.recordView === "real" ? "example" : "real" }));
+    set({ recordView: state.recordView === "example" ? "real" : "example" }));
 }
 
 // ---------- the labelled example: deterministic, realistic, never sent anywhere ----------
@@ -110,27 +113,39 @@ function exampleBoard(real) {
   const tally = { HIT: 0, MISSED: 0, MISSED_WAITING: 0, PENDING: 0 };
   const per = [];
   const rows = st.map((s) => {
-    const days = {}; let h = 0, g = 0;
+    const days = {}; let h = 0, m = 0, u = 0;
     dates.forEach((d, i) => {
       const lo = Math.round(170 + r() * 70), hi = lo + Math.round(28 + r() * 22);
       if (i === dates.length - 1) { days[d] = { status: "PENDING", lo, hi, actual: null, miss_by: 0, pollutant: "PM10" }; tally.PENDING++; return; }
-      const hit = r() < 0.8;
-      const miss = Math.round(4 + r() * 26);
-      const actual = hit ? Math.round(lo + r() * (hi - lo)) : (r() < 0.5 ? hi + miss : lo - miss);
-      days[d] = { status: hit ? "HIT" : "MISSED", lo, hi, actual, miss_by: hit ? 0 : miss, pollutant: "PM10" };
-      tally[hit ? "HIT" : "MISSED"]++; g++; h += hit;
+      const roll = r();
+      if (roll < 0.08) {
+        days[d] = { status: "MISSED_WAITING", lo, hi, actual: null, miss_by: 0, pollutant: "PM10" };
+        tally.MISSED_WAITING++; u++;
+      } else if (roll < 0.82) {
+        const actual = Math.round(lo + r() * (hi - lo));
+        days[d] = { status: "HIT", lo, hi, actual, miss_by: 0, pollutant: "PM10" };
+        tally.HIT++; h++;
+      } else {
+        const miss = Math.round(4 + r() * 26);
+        const actual = r() < 0.5 ? hi + miss : lo - miss;
+        days[d] = { status: "MISSED", lo, hi, actual, miss_by: miss, pollutant: "PM10" };
+        tally.MISSED++; m++;
+      }
     });
-    per.push({ uid: s.uid, name: s.name, hits: h, graded: g });
+    per.push({ uid: s.uid, name: s.name, hits: h, misses: m, unverified: u, graded: h + m });
     return { uid: s.uid, name: s.name, days };
   });
-  const hits = per.reduce((a, s) => a + s.hits, 0), graded = per.reduce((a, s) => a + s.graded, 0);
+  const hits = per.reduce((a, s) => a + s.hits, 0);
+  const graded = per.reduce((a, s) => a + s.graded, 0);
+  const unverified = per.reduce((a, s) => a + s.unverified, 0);
   const pick = (i) => st[i % st.length];
   const recent = [
     { s: pick(2), mins: 35, status: "PENDING", lo: 232, hi: 266, actual: null },
     { s: pick(0), mins: 190, status: "HIT", lo: 214, hi: 251, actual: 238 },
     { s: pick(5), mins: 420, status: "MISSED", lo: 188, hi: 222, actual: 241, miss_by: 19 },
+    { s: pick(3), mins: 540, status: "MISSED_WAITING", lo: 195, hi: 230, actual: null },
     { s: pick(8), mins: 610, status: "HIT", lo: 176, hi: 209, actual: 193 },
   ].map((x) => ({ name: x.s.name, uid: x.s.uid, created_ts: now - x.mins * 60, lo: x.lo, hi: x.hi, status: x.status, actual: x.actual, miss_by: x.miss_by || 0 }));
   return { ...real, dates, rows, tally, recent_holds: recent, participation: null,
-    accuracy: { hits, graded, target: 0.8, stations: per.sort((a, b) => b.graded - a.graded || a.name.localeCompare(b.name)) } };
+    accuracy: { hits, graded, unverified, target: 0.8, stations: per.sort((a, b) => b.graded - a.graded || a.name.localeCompare(b.name)) } };
 }
