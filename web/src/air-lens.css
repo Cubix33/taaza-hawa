@@ -219,7 +219,8 @@ html[lang="hi"] .lens-scene-caption, html[lang="hi"] .lens-directory h2, html[la
 }
 @media (prefers-reduced-motion: reduce) { .lens-loading-ring { animation: none; } .lens-page *, .lens-page *::after { transition: none !important; } .lens-map-tools [data-lens="orbit"] { display: none; } }
 
-/* ==== Air Lens wind (ticket 02) ===================================================   Open-Meteo model wind as weather context: canvas overlay, layer toggle + key, panel readout.
+/* ==== Air Lens wind (ticket 02) ==========================================================
+   Open-Meteo model wind as weather context: canvas overlay, layer toggle + key, panel readout.
    Logic: lib/air-lens-wind.js (pure), lib/air-lens-wind-layer.js (canvas), lib/air-lens-wind-ui.js. */
 .lens-wind-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 .lens-wind-row { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin-top: 9px; }
@@ -238,7 +239,8 @@ html[lang="hi"] .lens-scene-caption, html[lang="hi"] .lens-directory h2, html[la
   .lens-wind-row { justify-content: flex-start; flex-direction: column-reverse; align-items: flex-start; margin-top: 12px; }
   .lens-wind-line b { font-size: 14px; }
   .lens-wind-line small { font-size: 11px; }
-=======
+}
+
 /* ---------- 24-hour replay (ticket 03) ----------
    Timeline under the map: lib/air-lens-replay-ui.js renders it, lib/air-lens-replay.js holds the
    pure bucketing. Strip cells, playhead and tick labels share one geometry with the range thumb:
@@ -339,3 +341,11 @@ html[lang="hi"] .lens-replay-when b { font-family: var(--deva); }
   .lens-replay-flag { top: auto; bottom: 100px; left: 18px; transform: none; font-size: 11px; }
   .lens-workspace.is-replaying .lens-scene-caption, .lens-workspace.is-replaying .lens-scene-bottom p { visibility: hidden; }
 }
+
+/* ---- Living sky (air-lens-sky.js): Live/Dusk/Day toggle and the "illustrative, not a camera" caption.
+   The haze itself is drawn in WebGL under the map labels, so markers and evidence lines stay crisp. */
+.lens-live-dot { display: inline-block; width: 6px; height: 6px; margin: 0 6px 1px 0; border-radius: 50%; background: currentColor; opacity: .35; vertical-align: middle; }
+.lens-scene-theme button.active .lens-live-dot { background: #2f9e6e; opacity: 1; }
+.lens-scene-bottom .lens-sky-caption { margin: -12px 0 16px; max-width: 54ch; font-size: 10.5px; line-height: 1.45; color: var(--map-muted); text-shadow: 0 0 3px #15292c, 0 0 9px #15292c; }
+.lens-stage.day .lens-sky-caption { text-shadow: 0 0 3px #e8e4d8, 0 0 9px #e8e4d8; }
+@media (max-width: 760px) { .lens-scene-bottom .lens-sky-caption { margin: -8px 0 12px; font-size: 10px; max-width: none; } }
