@@ -31,17 +31,25 @@ ADVICE = {
            "STAY": "The air is very poor. Skip outdoor exercise and games today.",
            "UNKNOWN": "We don't have a reliable number for this station right now. Pick another nearby station."},
 }
-FOOT = {"hi": "यह स्टेशन की हवा है, आपकी गली की नहीं।", "en": "This is station air, not your street."}
+WAIT_NEXT = {
+    "hi": {False: "स्टेशन का अगला नंबर आने पर फिर देखें, आमतौर पर एक घंटे के अंदर।", True: "स्टेशन का नया नंबर आने पर फिर देखें।"},
+    "en": {False: "Check again after the station's next number, usually within the hour.",
+           True: "Check again once the station sends a new number."},
+}
+FOOT = {"hi": "यह स्टेशन की हवा है, आपकी गली की नहीं। यह सलाह स्वस्थ वयस्कों के लिए है, डॉक्टरी सलाह नहीं।",
+        "en": "This is station air, not your street. Set for healthy adults, not medical advice."}
 
 
 def spoken_text(card: dict, lang: str) -> str:
     """Plain-words script for a card (same facts as the on-screen answer and its 'why' lines)."""
     lang = lang if lang in LANG_CODE else "hi"
     ans = card.get("answer", "UNKNOWN")
+    fresh = card.get("state") == "fresh"
     parts = [card.get("name", ""), SAY[lang][ans], ADVICE[lang][ans]]
+    if ans == "WAIT":
+        parts.append(WAIT_NEXT[lang][not fresh])
     age = card.get("age_min")
     iv = card.get("interval")
-    fresh = card.get("state") == "fresh"
     if lang == "hi":
         band = card.get("band_hi")
         if iv and band:
@@ -60,8 +68,8 @@ def spoken_text(card: dict, lang: str) -> str:
         if age is not None:
             parts.append(f"This number was measured {human_age_en(age)} ago." if fresh
                          else f"This station's last number came {human_age_en(age)} ago, so this is our estimate.")
-    parts.append(FOOT[lang])
-    return " ".join(p for p in parts if p)[:MAX_CHARS]
+    body = " ".join(p for p in parts if p)[: MAX_CHARS - len(FOOT[lang]) - 1].rstrip()
+    return f"{body} {FOOT[lang]}"  # the footer is never truncated away
 
 
 def _client():

@@ -39,6 +39,23 @@ def test_fresh_station_says_when_the_number_was_measured():
     assert "measured" in speech.spoken_text(c, "en") and "नापा गया" in speech.spoken_text(c, "hi")
 
 
+def test_a_wait_answer_says_when_to_look_again():
+    s, c = card(2)  # fresh 230 -> WAIT
+    assert c["answer"] == "WAIT"
+    assert "Check again after the station's next number" in speech.spoken_text(c, "en")
+    assert "अगला नंबर आने पर फिर देखें" in speech.spoken_text(c, "hi")
+
+
+def test_every_spoken_answer_ends_with_the_whole_healthy_adults_line_even_for_long_names():
+    s, c = card(1)
+    c["name"] = "National Institute of Malaria Research, Sector 8, Dwarka, Delhi, Delhi, India"
+    for uid_card in (c, card(2)[1]):
+        en, hi = speech.spoken_text(uid_card, "en"), speech.spoken_text(uid_card, "hi")
+        assert en.endswith("Set for healthy adults, not medical advice.")
+        assert hi.endswith("यह सलाह स्वस्थ वयस्कों के लिए है, डॉक्टरी सलाह नहीं।")
+        assert len(en) <= speech.MAX_CHARS and len(hi) <= speech.MAX_CHARS
+
+
 def test_synthesize_uses_kajal_neural_and_caches_by_text(monkeypatch):
     fake = FakePolly()
     monkeypatch.setattr(speech, "_client", lambda: fake)
