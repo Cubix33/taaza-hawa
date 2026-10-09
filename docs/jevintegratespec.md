@@ -8,6 +8,8 @@ Sources:
 
 Prerequisite done: the CPCB scale and real-UTC fix (#03) is merged, so the card already shows India-scale values.
 
+**Layout update (9 Oct 2026):** [mismatchpanelspec.md](mismatchpanelspec.md) supersedes this spec's panel layout. The panel is now opened step by step: one text box first, and button groups only for `needs_confirm`. That spec also adds the neighbour check to the same button. Everything else here (the `/explain` contract, Jev rules, privacy, the evaluation set) still applies.
+
 ## Problem Statement
 
 A Delhi resident opens Taaza Hawa and sees one number. Their purifier, IQAir, the phone's weather widget, or simply the sky outside says something else. Typical cases:

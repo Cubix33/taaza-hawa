@@ -23,6 +23,13 @@
 - [docs/research/2026-10-09-typesafe-jev-integration.md](../../research/2026-10-09-typesafe-jev-integration.md)
 - [docs/council/round-5-real-use/02-verdict.md](../../council/round-5-real-use/02-verdict.md)
 
+**Layout update (9 Oct 2026):** where Task 4 differs from [docs/mismatchpanelspec.md](../../mismatchpanelspec.md), follow that spec:
+- open the panel step by step: one text box and one button first;
+- render button groups only for `needs_confirm`;
+- put the opening button in the card-actions row.
+
+That spec's neighbour check (part A) needs its own plan.
+
 **Deviations from the spec, decided here.** Implement these, not the spec text:
 
 1. **Conversion values follow the codebase's table.** The spec's example values (US 300 → ~381, US 190 → ~269) came from the EPA 2024 table. The spec also says "reuse the existing US→CPCB conversion". That conversion (`aqi.cpcb_from_us`) uses aqicn's pre-2024 table, the one WAQI uses, and keeping one conversion wins. The tests pin the codebase's values: **US 300 → 400 (Very Poor), US 190 → 309 (Very Poor)**. The copy never quotes a crossover number; it says "at Delhi's usual winter levels".
