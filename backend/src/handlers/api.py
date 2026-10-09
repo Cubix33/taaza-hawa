@@ -136,7 +136,9 @@ def _school_route(method, path, q, body, s, t):
             return 400, {"error": "school name must be 2 to 80 characters"}
         uid = int(body["uid"]) if body.get("uid") is not None else None
         lang = body.get("lang") if body.get("lang") in ("hi", "en") else None
-        sc, token = school.update(s, sc, name, uid, email, clear_email=raw == "", lang=lang)
+        place = _clean_place(body.get("place")) if "place" in body else None
+        sc, token = school.update(s, sc, name, uid, email, clear_email=raw == "", lang=lang,
+                                  place=place, set_place="place" in body, now_ts=t)
         if not sc:
             return 404, {"error": "unknown station"}
         _send_confirm(sc, token)

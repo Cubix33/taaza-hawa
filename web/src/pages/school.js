@@ -1,5 +1,9 @@
 // For schools: set up once, then one plan every school morning, one tap to log what was done,
 // and a 30-day record. The plan is decided on the server (fixed table on the CPCB bands).
+//
+// Layout of the dashboard: header (school, station, Change school) -> today's plan with three ways
+// to pass it on (email draft, WhatsApp, print) -> what the school did -> optional automatic
+// 06:30 email -> 30-day record. The school is picked the same way when setting up and when changing.
 import "../school.css";
 import { state, set, ls } from "../lib/store.js";
 import { t, hi, T } from "../lib/i18n.js";
@@ -10,16 +14,20 @@ import { pickerView, bindPicker } from "../lib/picker.js";
 
 const ACTIVITIES = ["assembly", "pe", "recess", "sensitive"];
 const ACTIONS = ["followed", "outdoor", "closed"];
+const NEAR_KM = 8; // beyond this, say the station's air may differ from the school's
 
 // the school's id and key live on this device only; no account
 const creds = () => { try { return JSON.parse(ls.get("school") || "null"); } catch { return null; } };
 const saveCreds = (c) => ls.set("school", c ? JSON.stringify(c) : "");
 const ident = () => { const c = creds(); return { id: c?.id, k: c?.k }; };
 
-const form = { name: "", uid: null, email: "", place: null, auto: false };
-const NEAR_KM = 8; // beyond this, say the station's air may differ from the school's
-const edit = { open: false, name: "", uid: null, email: "", copied: false };
-let note = null; // { text, ok } one line under the header: confirmed, saved, link expired
+// the school being picked: `form` while setting up, `chg` while changing an existing school
+const form = { name: "", uid: null, place: null, auto: false };
+const chg = { open: false, name: "", uid: null, place: null, auto: false };
+const model = () => (state.school ? chg : form);
+let note = null;      // { text, ok } one line under the header
+let mailEdit = false; // the automatic-email box is showing its address field
+let copied = false;
 
 export function load() {
   const p = state.params;
@@ -50,12 +58,13 @@ async function loadSchool(token) {
   }
 }
 
-export function unmount() { note = null; edit.open = false; }
+export function unmount() { note = null; chg.open = false; mailEdit = false; }
 
 // ---------- formatting ----------
 const fmtDate = (d, lang = state.lang) => new Date(`${d}T12:00:00+05:30`).toLocaleDateString(lang === "hi" ? "hi-IN" : "en-IN", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
 const fmtTime = (ts) => new Date(ts * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" });
 const lv = (d) => d.level ?? "none";
+const plain = (s) => s.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
 
 function basis(d, lang = state.lang) {
   const L = T[lang], b = d.basis, st = esc(d.station), age = ageText(b.age_min, lang);
@@ -77,9 +86,18 @@ export function view() {
   return signup();
 }
 
-function head(title, sub = "") {
-  return `<section class="page-head wrap"><div><p class="eyebrow">${t("navSchool")}</p><h1 class="page-title">${title}</h1>${sub}</div></section>
+function head(title, sub = "", side = "") {
+  return `<section class="page-head wrap"><div><p class="eyebrow">${t("navSchool")}</p><h1 class="page-title">${title}</h1>${sub}</div>${side}</section>
   ${note ? `<div class="wrap"><p class="sc-note ${note.ok ? "ok" : ""}">${esc(note.text)}</p></div>` : ""}`;
+}
+
+// the two fields that pick a school: search by name, then the nearest station is chosen
+function schoolFields(m) {
+  return `<div class="fld sc-find"><label for="scname">${t("scFind")}</label>
+      <input id="scname" name="name" required minlength="2" maxlength="80" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="scsugg" aria-expanded="false" placeholder="${esc(t("scFindPh"))}" value="${esc(m.name)}" />
+      <div id="scsugg" class="sc-sugg" hidden></div>
+      <small id="scaddr">${m.place?.address ? `<span class="sc-addr">${icon.pin}${esc(m.place.address)}</span>` : t("scFindHint")}</small></div>
+    <div class="fld"><span>${t("scStation")}</span>${pickerView(m.uid)}<small>${stationHint(m)}</small></div>`;
 }
 
 function signup() {
@@ -88,14 +106,7 @@ function signup() {
   <div class="wrap sc-signup">
     <form id="scform" class="panel sc-form" novalidate>
       <h2 class="h2s">${t("scFormTitle")}</h2>
-      <div class="fld sc-find"><label for="scname">${t("scFind")}</label>
-        <input id="scname" name="name" required minlength="2" maxlength="80" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="scsugg" aria-expanded="false" placeholder="${esc(t("scFindPh"))}" value="${esc(form.name)}" />
-        <div id="scsugg" class="sc-sugg" hidden></div>
-        <small id="scaddr">${form.place?.address ? `<span class="sc-addr">${icon.pin}${esc(form.place.address)}</span>` : t("scFindHint")}</small></div>
-      <div class="fld"><span>${t("scStation")}</span>${pickerView(form.uid)}<small>${stationHint()}</small></div>
-      ${state.emailEnabled ? `<label class="fld"><span>${t("scEmail")}</span>
-        <input id="scemail" type="email" inputmode="email" autocomplete="email" placeholder="${t("scEmailPh")}" value="${esc(form.email)}" />
-        <small>${t("scEmailHint")}</small></label>` : ""}
+      ${schoolFields(form)}
       <button class="btn cta" type="submit" ${state.busy ? "disabled" : ""}><span>${state.busy ? t("scCreating") : t("scCreate")}</span>${state.busy ? "" : icon.arrow}</button>
       <p class="muted small">${t("scNoLogin")}</p>
     </form>
@@ -113,11 +124,11 @@ const round1 = (x) => Math.round(x * 10) / 10;
 // nearest station that has sent at least one number; an old number is fine, it gets an estimate
 const nearest = (p) => state.stations.filter((s) => s.age_min != null && s.lat).sort((a, b) => km(p, a) - km(p, b))[0];
 
-function stationHint() {
-  const st = state.stations.find((s) => s.uid === form.uid);
-  if (!form.place || !st) return t("scStationHint");
-  const d = round1(km(form.place, st));
-  return `${form.auto ? t("scNearAuto", d) : t("scNearManual", d)}${d > NEAR_KM ? ` <b class="sc-far">${t("scFar")}</b>` : ""}`;
+function stationHint(m) {
+  const st = state.stations.find((s) => s.uid === m.uid);
+  if (!m.place || !st) return t("scStationHint");
+  const d = round1(km(m.place, st));
+  return `${m.auto ? t("scNearAuto", d) : t("scNearManual", d)}${d > NEAR_KM ? ` <b class="sc-far">${t("scFar")}</b>` : ""}`;
 }
 
 let findTimer = null, findSeq = 0;
@@ -152,23 +163,55 @@ function showSugg(box, html) {
 }
 
 function choose(p) {
-  const st = nearest(p);
-  Object.assign(form, { name: p.name, place: { lat: p.lat, lon: p.lon, address: p.address } });
-  if (st) Object.assign(form, { uid: st.uid, auto: true });
+  const m = model(), st = nearest(p);
+  Object.assign(m, { name: p.name, place: { lat: p.lat, lon: p.lon, address: p.address } });
+  if (st) Object.assign(m, { uid: st.uid, auto: true });
   set({ pickerOpen: false, q: "" });
 }
 
+function bindFields(m) {
+  const $ = (id) => document.getElementById(id);
+  $("scname")?.addEventListener("input", (e) => {
+    if (m.place) { m.place = null; m.auto = false; $("scaddr").textContent = t("scFindHint"); }
+    m.name = e.target.value;
+    find(m.name);
+  });
+  $("scname")?.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); document.querySelector("#scsugg .sc-opt")?.focus(); }
+    if (e.key === "Escape") showSugg($("scsugg"), null);
+  });
+  // close the suggestions when focus leaves the search box and its list
+  document.querySelector(".sc-find")?.addEventListener("focusout", (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setTimeout(() => showSugg($("scsugg"), null), 120);
+  });
+  bindPicker(m.uid, (uid) => { m.uid = uid; m.auto = false; set({ pickerOpen: false, q: "" }); });
+}
+
+// ---------- dashboard ----------
 function dashboard(v) {
   const s = v.school;
   const sub = `<p class="page-lead sc-sub">${icon.pin}<span>${esc(s.station || "")}${s.station_km != null ? ` · ${t("scKmFrom", s.station_km)}` : ""}</span><a href="#/check?s=${s.uid}">${t("scLive")} ${icon.arrow}</a></p>`;
-  return `${head(esc(s.name), sub)}
+  const side = chg.open ? "" : `<button id="scchange" type="button" class="btn ghost sc-change-btn">${icon.school}<span>${t("scChange")}</span></button>`;
+  return `${head(esc(s.name), sub, side)}
+  ${chg.open ? changePanel() : ""}
   <div class="wrap sc-cols">
     <div class="sc-main">${today(v)}${logPanel(v)}</div>
-    <aside class="sc-side">${emailPanel(v)}${fireView(v.today?.fires)}${rulePanel()}</aside>
+    <aside class="sc-side">${autoMail(v)}${fireView(v.today?.fires)}${rulePanel()}</aside>
   </div>
   <section class="wrap sc-rec">${record(v)}</section>
-  <section class="wrap sc-set-w">${settings(v)}</section>
+  <section class="wrap sc-set-w">${manage(v)}</section>
   ${printCard(v)}`;
+}
+
+function changePanel() {
+  return `<div class="wrap"><form id="scchangeform" class="panel sc-form sc-changebox" novalidate>
+    <h2 class="h2s">${t("scChange")}</h2>
+    ${schoolFields(chg)}
+    <div class="sc-row">
+      <button class="btn cta" type="submit" ${state.busy ? "disabled" : ""}>${t("scChangeSave")}</button>
+      <button id="scchangecancel" class="btn ghost" type="button">${t("scCancel")}</button>
+    </div>
+  </form></div>`;
 }
 
 function today(v) {
@@ -182,17 +225,30 @@ function today(v) {
       ${last ? `<p class="sc-basis">${t("scLast", fmtDate(last.date))} ${t("scHead")[lv(last)]}</p>` : ""}
     </section>`;
   }
+  const m = message(v, d);
   return `<section class="hero-card sc-today lv-${lv(d)}">
     <div class="hero-top"><p class="q">${t("scToday")} · ${fmtDate(d.date)}</p><span class="pill">${icon.clock}${t("scDecided", fmtTime(d.decided_ts))}</span></div>
     <h2 class="ans">${t("scHead")[lv(d)]}</h2>
     ${d.plan ? planRows(d.plan) : `<p class="advice">${t("scNoneSub")}</p>`}
     <p class="sc-basis">${basis(d)}</p>
     <div class="sc-share">
-      <a class="btn wa" href="${share(v, d)}" target="_blank" rel="noopener">${icon.wa}<span>${t("scShare")}</span></a>
+      <a class="btn wa" href="${mailto(m)}">${icon.mail}<span>${t("scMailBtn")}</span></a>
+      <a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(m.whatsapp)}" target="_blank" rel="noopener">${icon.wa}<span>${t("scShare")}</span></a>
       <button id="scprint" type="button" class="btn wa">${icon.print}<span>${t("scPrint")}</span></button>
     </div>
+    <p class="sc-share-hint">${t("scShareHint")}</p>
   </section>`;
 }
+
+// One written message, in the page's language, used for the email draft and for WhatsApp.
+// It carries the plan, never the page link (that link holds the school's key).
+function message(v, d) {
+  const rows = d.plan ? ACTIVITIES.map((a) => `${t("scRows")[a]}: ${t("scStatus")[d.plan[a]]}`).join("\n") : t("scNoneSub");
+  const body = plain([`${t("scHead")[lv(d)]}`, "", rows, "", basis(d), d.fires ? fireText(d.fires) : "", "", t("scHonest")].join("\n").replace(/\n{3,}/g, "\n\n"));
+  const title = `${v.school.name} · ${fmtDate(d.date)}`;
+  return { subject: `${v.school.name}: ${plain(t("scHead")[lv(d)])}`, body: `${body}\n\n— ${t("brand")}`, whatsapp: `${t("brand")} · ${title}\n${body}` };
+}
+const mailto = (m) => `mailto:?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body.replace(/\n/g, "\r\n"))}`;
 
 // ---------- the notice-board card: one A4 page in the language the page is in ----------
 // Rendered with the page but shown only when printing (see school.css @media print).
@@ -213,13 +269,6 @@ function printCard(v) {
   </article>`;
 }
 
-// the WhatsApp text carries the plan, never the page link (that link holds the school's key)
-function share(v, d) {
-  const rows = d.plan ? ACTIVITIES.map((a) => `${t("scRows")[a]}: ${t("scStatus")[d.plan[a]]}`).join("\n") : t("scNoneSub");
-  const msg = t("scShareMsg", v.school.name, fmtDate(d.date), t("scHead")[lv(d)], rows, basis(d));
-  return `https://wa.me/?text=${encodeURIComponent(msg.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&"))}`;
-}
-
 function logPanel(v) {
   const d = v.today;
   if (!d) return "";
@@ -230,12 +279,21 @@ function logPanel(v) {
   </section>`;
 }
 
-function emailPanel(v) {
-  const s = v.school;
-  const text = !v.email_enabled ? t("scEmailOff") : !s.email_hint ? t("scEmailNone")
-    : s.email_confirmed ? t("scEmailOn", esc(s.email_hint)) : t("scEmailWait", esc(s.email_hint));
-  const on = v.email_enabled && s.email_hint && s.email_confirmed;
-  return `<section class="panel sc-mail ${on ? "on" : ""}"><p class="sc-mail-t">${on ? icon.check : icon.clock}<b>${t("scEmailTitle")}</b></p><p>${text}</p></section>`;
+// the optional automatic 06:30 email; only shown when the server can send email at all
+function autoMail(v) {
+  if (!v.email_enabled) return "";
+  const s = v.school, on = s.email_hint && s.email_confirmed, waiting = s.email_hint && !s.email_confirmed;
+  const askForm = `<form id="automail" class="sc-auto-form" novalidate>
+      <input id="automailin" type="email" inputmode="email" autocomplete="email" placeholder="${esc(t("scAutoPh"))}" required />
+      <button class="btn ink" type="submit" ${state.busy ? "disabled" : ""}>${t("scAutoOn")}</button>
+    </form><p class="muted small">${t("scAutoHint")}</p>`;
+  const manage = `<div class="sc-row"><button id="mailchange" type="button" class="btn ghost">${t("scAutoChange")}</button>
+      <button id="mailoff" type="button" class="btn ghost">${t("scAutoOff")}</button></div>`;
+  const body = mailEdit || !s.email_hint ? `<p>${t("scAutoLead")}</p>${askForm}`
+    : on ? `<p>${t("scEmailOn", esc(s.email_hint))}</p>${manage}`
+    : `<p>${t("scEmailWait", esc(s.email_hint))}</p>${manage}`;
+  return `<section class="panel sc-mail ${on && !mailEdit ? "on" : ""}">
+    <p class="sc-mail-t">${on && !mailEdit ? icon.check : waiting && !mailEdit ? icon.clock : icon.mail}<b>${t("scAutoTitle")}</b></p>${body}</section>`;
 }
 
 function rulePanel() {
@@ -275,31 +333,14 @@ function record(v) {
   </div>`;
 }
 
-function settings(v) {
-  const s = v.school;
-  if (!edit.open) Object.assign(edit, { name: s.name, uid: s.uid, email: "" });
-  const link = `${location.origin}${location.pathname}#/school?id=${encodeURIComponent(s.id)}&k=${encodeURIComponent(creds()?.k || "")}`;
-  return `<details id="scset" class="panel sc-set" ${edit.open ? "open" : ""}>
-    <summary><b>${t("scSettings")}</b><span class="chev">${icon.chev}</span></summary>
-    <form id="scedit" class="sc-form" novalidate>
-      <label class="fld"><span>${t("scName")}</span><input id="edname" required minlength="2" maxlength="80" value="${esc(edit.name)}" /></label>
-      <div class="fld"><span>${t("scStation")}</span>${pickerView(edit.uid)}</div>
-      ${v.email_enabled ? `<label class="fld"><span>${t("scEmail")}</span>
-        <input id="edemail" type="email" inputmode="email" autocomplete="email" placeholder="${esc(s.email_hint || t("scEmailPh"))}" value="${esc(edit.email)}" />
-        <small>${s.email_hint ? t("scEmailKeep") : t("scEmailHint")}</small></label>` : ""}
-      <p class="muted small">${t("scLangNote")}</p>
-      <div class="sc-row">
-        <button class="btn ink" type="submit" ${state.busy ? "disabled" : ""}>${t("scSave")}</button>
-        ${s.email_hint ? `<button id="stopmail" class="btn ghost" type="button">${t("scStopEmail")}</button>` : ""}
-      </div>
-    </form>
-    <div class="sc-link">
-      <p><b>${t("scLinkTitle")}</b></p>
-      <p class="muted small">${t("scLinkText")}</p>
-      <div class="email-row"><input id="sclink" readonly value="${esc(link)}" /><button id="copylink" class="btn ghost" type="button">${edit.copied ? t("scCopied") : t("scCopy")}</button></div>
-    </div>
+// bottom of the page: open this school on another phone, or remove it
+function manage(v) {
+  const link = `${location.origin}${location.pathname}#/school?id=${encodeURIComponent(v.school.id)}&k=${encodeURIComponent(creds()?.k || "")}`;
+  return `<div class="panel sc-manage">
+    <div><p><b>${t("scLinkTitle")}</b></p><p class="muted small">${t("scLinkText")}</p></div>
+    <div class="email-row"><input id="sclink" readonly value="${esc(link)}" /><button id="copylink" class="btn ghost" type="button">${copied ? t("scCopied") : t("scCopy")}</button></div>
     <button id="scremove" class="sc-remove" type="button">${t("scRemove")}</button>
-  </details>`;
+  </div>`;
 }
 
 // ---------- actions ----------
@@ -316,65 +357,67 @@ async function signupSubmit(e) {
   if (name.length < 2) { document.getElementById("scname")?.focus(); return; }
   set({ busy: true });
   try {
-    const r = await post("/school", { name, uid: form.uid, email: form.email.trim() || null, lang: state.lang, place: form.place });
+    const r = await post("/school", { name, uid: form.uid, lang: state.lang, place: form.place });
     saveCreds({ id: r.school.id, k: r.key });
     state.school = r;
     note = null;
-    Object.assign(form, { name: "", email: "", place: null, auto: false });
+    Object.assign(form, { name: "", place: null, auto: false });
     window.scrollTo(0, 0);
   } catch (err) { note = { text: err.message, ok: false }; }
   set({ busy: false });
 }
 
-function editSubmit(e) {
+function changeSubmit(e) {
   e.preventDefault();
-  const body = { name: edit.name, uid: edit.uid, lang: state.lang };
-  if (edit.email.trim()) body.email = edit.email.trim();
-  call("/school/edit", body, () => { note = { text: t("scSaved"), ok: true }; edit.open = false; edit.email = ""; });
+  const name = chg.name.trim();
+  if (name.length < 2) { document.getElementById("scname")?.focus(); return; }
+  const stationChanged = chg.uid !== state.school.school.uid;
+  call("/school/edit", { name, uid: chg.uid, place: chg.place }, () => {
+    chg.open = false;
+    note = { text: stationChanged ? t("scChanged") : t("scDone"), ok: true };
+  });
 }
 
 export function bind() {
   const $ = (id) => document.getElementById(id);
   if (!state.school) {
-    $("scname")?.addEventListener("input", (e) => {
-      if (form.place) { form.place = null; form.auto = false; $("scaddr").textContent = t("scFindHint"); }
-      form.name = e.target.value;
-      find(form.name);
-    });
-    $("scname")?.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowDown") { e.preventDefault(); document.querySelector("#scsugg .sc-opt")?.focus(); }
-      if (e.key === "Escape") showSugg($("scsugg"), null);
-    });
-    // close the suggestions when focus leaves the search box and its list
-    document.querySelector(".sc-find")?.addEventListener("focusout", (e) => {
-      if (!e.currentTarget.contains(e.relatedTarget)) setTimeout(() => showSugg($("scsugg"), null), 120);
-    });
-    $("scemail")?.addEventListener("input", (e) => { form.email = e.target.value; });
     $("scform")?.addEventListener("submit", signupSubmit);
-    bindPicker(form.uid, (uid) => { form.uid = uid; form.auto = false; set({ pickerOpen: false, q: "" }); });
+    bindFields(form);
     return;
+  }
+  const s = state.school.school;
+  $("scchange")?.addEventListener("click", () => {
+    Object.assign(chg, { open: true, name: s.name, uid: s.uid, place: s.place || null, auto: false });
+    note = null;
+    set({ pickerOpen: false, q: "" });
+  });
+  if (chg.open) {
+    $("scchangeform")?.addEventListener("submit", changeSubmit);
+    $("scchangecancel")?.addEventListener("click", () => { chg.open = false; set({ pickerOpen: false, q: "" }); });
+    bindFields(chg);
   }
   document.querySelectorAll(".sc-act").forEach((b) => b.addEventListener("click", () => {
     const d = state.school.today;
     call("/school/log", { date: d.date, action: d.action === b.dataset.act ? null : b.dataset.act });
   }));
   $("scprint")?.addEventListener("click", () => window.print());
-  $("scset")?.addEventListener("toggle", (e) => { edit.open = e.target.open; });
-  $("edname")?.addEventListener("input", (e) => { edit.name = e.target.value; });
-  $("edemail")?.addEventListener("input", (e) => { edit.email = e.target.value; });
-  $("scedit")?.addEventListener("submit", editSubmit);
-  bindPicker(edit.uid, (uid) => { edit.uid = uid; set({ pickerOpen: false, q: "" }); });
-  $("stopmail")?.addEventListener("click", () => call("/school/edit", { email: "" }, () => { note = { text: t("scSaved"), ok: true }; }));
+  $("automail")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const email = $("automailin").value.trim();
+    if (email) call("/school/edit", { email, lang: state.lang }, () => { mailEdit = false; });
+  });
+  $("mailchange")?.addEventListener("click", () => { mailEdit = true; set({}); $("automailin")?.focus(); });
+  $("mailoff")?.addEventListener("click", () => call("/school/edit", { email: "" }, () => { mailEdit = false; }));
   $("copylink")?.addEventListener("click", async () => {
     const inp = $("sclink");
     try { await navigator.clipboard.writeText(inp.value); } catch { inp.select(); document.execCommand?.("copy"); }
-    edit.copied = true; set({});
-    setTimeout(() => { edit.copied = false; if (state.route === "school") set({}); }, 2000);
+    copied = true; set({});
+    setTimeout(() => { copied = false; if (state.route === "school") set({}); }, 2000);
   });
   $("scremove")?.addEventListener("click", async () => {
     if (!confirm(t("scRemoveQ"))) return;
     set({ busy: true });
-    try { await post("/school/delete", ident()); saveCreds(null); state.school = null; note = null; edit.open = false; }
+    try { await post("/school/delete", ident()); saveCreds(null); state.school = null; note = null; chg.open = false; }
     catch (e) { note = { text: e.message, ok: false }; }
     set({ busy: false });
   });

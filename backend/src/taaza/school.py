@@ -64,13 +64,23 @@ def authorize(store: Store, sid: str, key: str) -> dict | None:
 
 
 def update(store: Store, school: dict, name: str | None = None, uid: int | None = None,
-           email: str | None = None, clear_email: bool = False,
-           lang: str | None = None) -> tuple[dict | None, str | None]:
-    """Change name, station, email language or contact. A new address must be confirmed again."""
+           email: str | None = None, clear_email: bool = False, lang: str | None = None,
+           place: dict | None = None, set_place: bool = False,
+           now_ts: int | None = None) -> tuple[dict | None, str | None]:
+    """Change school (name, station, map position), email language or contact.
+    A new address must be confirmed again. A new station discards today's plan, so it is made again
+    for that station; set_place=True with place=None forgets the map position."""
     if uid is not None:
         if not store.get("STATION", str(uid)):
             return None, None
+        if uid != school["uid"] and now_ts is not None:
+            store.delete(f"SDAY#{school['id']}", service.ist_date(now_ts))
         school["uid"] = uid
+    if set_place:
+        if place:
+            school["place"] = place
+        else:
+            school.pop("place", None)
     if name:
         school["name"] = name
     if lang:
@@ -223,7 +233,7 @@ def view(store: Store, school: dict, now_ts: int) -> dict:
     days = [_public_day(store, d) for d in store.query(f"SDAY#{school['id']}", limit=HISTORY_DAYS, reverse=True)]
     today = service.ist_date(now_ts)
     return {"school": {"id": school["id"], "name": school["name"], "uid": school["uid"],
-                       "station": meta.get("name"), "station_km": dist,
+                       "station": meta.get("name"), "station_km": dist, "place": pl,
                        "address": pl.get("address") if pl else None, "lang": school.get("lang", "hi"),
                        "created_ts": school["created_ts"],
                        "email_hint": _mask(school["email"]) if school.get("email") else None,

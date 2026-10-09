@@ -175,3 +175,25 @@ def test_a_school_found_on_the_map_keeps_its_place_and_distance():
     # a position outside Delhi NCR is ignored, not stored
     code, out = post(s, "/school", {"name": "Far School", "uid": 1, "place": {"lat": 19.07, "lon": 72.87}})
     assert code == 201 and out["school"]["station_km"] is None
+
+
+def test_changing_school_moves_the_map_position_and_remakes_todays_plan():
+    s = MemoryStore()
+    seed(s, MORNING)
+    place = {"lat": 28.588, "lon": 77.068, "address": "Sector 7, Dwarka"}
+    _, out = post(s, "/school", {"name": "Old School", "uid": 1, "place": place})
+    ident = {"id": out["school"]["id"], "k": out["key"]}
+    date = out["today"]["date"]
+    post(s, "/school/log", {**ident, "date": date, "action": "followed"})
+    new_place = {"lat": 28.6, "lon": 76.99, "address": "Najafgarh Road"}
+    code, v = post(s, "/school/edit", {**ident, "name": "New School", "uid": 2, "place": new_place})
+    assert code == 200 and v["school"]["name"] == "New School" and v["school"]["address"] == "Najafgarh Road"
+    assert v["school"]["station"] == "Najafgarh" and v["school"]["place"]["lat"] == 28.6
+    assert v["today"]["station"] == "Najafgarh" and v["today"].get("action") is None  # plan made again, log reset
+    # the same station again keeps the plan and its log
+    post(s, "/school/log", {**ident, "date": date, "action": "outdoor"})
+    code, v = post(s, "/school/edit", {**ident, "name": "New School", "uid": 2})
+    assert v["today"]["action"] == "outdoor" and v["school"]["address"] == "Najafgarh Road"  # no "place" key: unchanged
+    code, v = post(s, "/school/edit", {**ident, "place": None})
+    assert v["school"]["address"] is None and v["school"]["station_km"] is None
+    assert post(s, "/school/edit", {**ident, "place": {"lat": 19.0, "lon": 72.8}})[1]["school"]["address"] is None  # outside NCR

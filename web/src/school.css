@@ -46,8 +46,8 @@ html[lang="hi"] .sc-get h3 { font-family: var(--deva); font-weight: 400; }
 .st-limit { color: var(--wait); background: var(--wait-bg); }
 .st-in { color: var(--stay); background: var(--stay-bg); }
 .sc-basis { margin: 18px 0 0; font-size: .95rem; line-height: 1.55; color: var(--ink2); max-width: 62ch; }
-.sc-share { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-.sc-share .btn.wa { margin-top: 0; }
+.sc-share { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
+.sc-share .btn.wa { margin-top: 0; width: 100%; padding: 0 10px; }
 .btn.wa svg[viewBox] { flex: none; }
 #scprint svg { color: var(--ink2); }
 
@@ -89,19 +89,24 @@ html[lang="hi"] .sc-get h3 { font-family: var(--deva); font-weight: 400; }
 .sc-gr.ok { color: var(--go); } .sc-gr.no { color: var(--stay); }
 .sc-empty, .sc-honest { margin: 14px 0 0; }
 
-/* settings */
-.sc-set-w { padding-top: 24px; }
-.sc-set { padding: 0; box-shadow: none; }
-.sc-set summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; cursor: pointer; list-style: none; }
-.sc-set summary::-webkit-details-marker { display: none; }
-.sc-set[open] summary .chev { transform: rotate(180deg); }
-.sc-set > form, .sc-set > .sc-link { margin: 0 22px; padding: 18px 0; border-top: 1px solid var(--line); }
+/* change school, the automatic email box, and the bottom "other phone / remove" panel */
+.sc-change-btn { height: 50px; gap: 10px; } .sc-change-btn svg { width: 18px; height: 18px; color: var(--brand); }
+.sc-changebox { margin-bottom: 24px; }
 .sc-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .sc-row .btn { height: 46px; }
-.sc-link p { margin: 0 0 6px; }
-.sc-link .email-row { margin-top: 8px; }
-.sc-link input { font: 500 .8rem var(--mono); color: var(--ink2); }
-.sc-remove { margin: 4px 22px 20px; padding: 8px 0; border: 0; background: none; color: var(--stay); font-size: .92rem; font-weight: 600; }
+.sc-form .sc-row .btn.cta { width: auto; height: 46px; font-size: 1rem; }
+.sc-auto-form { display: flex; gap: 8px; margin: 12px 0 8px; }
+.sc-auto-form input { flex: 1; min-width: 0; height: 46px; padding: 0 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); }
+.sc-auto-form input:focus { border-color: var(--ink2); outline: none; }
+.sc-auto-form .btn { height: 46px; padding: 0 16px; font-size: .95rem; }
+.sc-mail .sc-row { margin-top: 12px; } .sc-mail .sc-row .btn { height: 40px; padding: 0 14px; font-size: .9rem; }
+.sc-mail p + .muted { margin-top: 0; }
+.sc-share-hint { margin: 12px 0 0; font-size: .86rem; color: var(--muted); line-height: 1.5; max-width: 62ch; }
+.sc-set-w { padding-top: 24px; }
+.sc-manage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 28px; align-items: center; box-shadow: none; }
+.sc-manage p { margin: 0 0 4px; }
+.sc-manage .email-row input { font: 500 .8rem var(--mono); color: var(--ink2); }
+.sc-remove { grid-column: 1 / -1; justify-self: start; padding: 4px 0; border: 0; background: none; color: var(--stay); font-size: .92rem; font-weight: 600; }
 .sc-remove:hover { text-decoration: underline; }
 
 /* home teaser: the example card */
@@ -114,6 +119,9 @@ html[lang="hi"] .sc-get h3 { font-family: var(--deva); font-weight: 400; }
   .mainnav .nav-about { display: none; }
 }
 @media (max-width: 760px) {
+  .sc-manage { grid-template-columns: 1fr; }
+  .sc-change-btn { width: 100%; }
+  .sc-share { grid-template-columns: 1fr; }
   .sc-acts { grid-template-columns: 1fr; }
   .sc-act { justify-content: flex-start; }
   .sc-plan li { flex-wrap: wrap; gap: 6px 14px; }
