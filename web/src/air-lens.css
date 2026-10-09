@@ -218,3 +218,104 @@ html[lang="hi"] .lens-scene-caption, html[lang="hi"] .lens-directory h2, html[la
   .lens-tile-notice, .lens-pin-prompt { left: 17px; top: 132px; }
 }
 @media (prefers-reduced-motion: reduce) { .lens-loading-ring { animation: none; } .lens-page *, .lens-page *::after { transition: none !important; } .lens-map-tools [data-lens="orbit"] { display: none; } }
+
+/* ---------- 24-hour replay (ticket 03) ----------
+   Timeline under the map: lib/air-lens-replay-ui.js renders it, lib/air-lens-replay.js holds the
+   pure bucketing. Strip cells, playhead and tick labels share one geometry with the range thumb:
+   hour i sits at thumb/2 + i * (track - thumb) / 23. Reduced motion: the global rule above
+   removes the playhead glide, so playback steps hour by hour. */
+.lens-replay { --thumb: 22px; grid-column: 1 / -1; background: var(--surface); border-top: 1px solid var(--line); padding: 12px 22px 14px; }
+.lens-replay button { font-family: inherit; color: inherit; cursor: pointer; }
+.lens-replay.is-closed { display: flex; align-items: center; gap: 16px; padding-block: 10px; }
+.lens-replay-intro { display: flex; align-items: baseline; gap: 14px; flex: 1; min-width: 0; }
+.lens-replay-intro p { margin: 0; font-size: 12px; color: var(--muted); }
+.lens-replay-status { margin: 0; font-size: 11px; color: var(--lens-accent); }
+.lens-replay-status:empty { display: none; }
+.lens-replay-open, .lens-replay-now { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 13px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font-size: 12px; white-space: nowrap; }
+.lens-replay-open svg { width: 14px; height: 14px; }
+.lens-replay-open:disabled { opacity: .5; cursor: default; }
+.lens-replay-open:hover, .lens-replay-now:hover { border-color: var(--lens-accent); }
+.lens-replay-now i { width: 7px; height: 7px; border-radius: 50%; background: #3f9c74; box-shadow: 0 0 0 3px #3f9c7426; }
+.lens-replay-head { display: flex; align-items: center; gap: 18px; }
+.lens-replay-head > .lens-replay-now { margin-left: auto; }
+.lens-replay-when { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin: 0; }
+.lens-replay-when b { font: 500 18px/1.2 var(--serif); letter-spacing: -.01em; }
+.lens-replay-when span { font: 500 10px var(--mono); color: var(--muted); }
+.lens-replay-message { margin: 0; font-size: 12px; color: var(--muted); }
+.lens-replay-message button { border: 0; background: none; padding: 0; color: var(--lens-accent); text-decoration: underline; }
+.lens-replay-body { display: grid; grid-template-columns: auto minmax(0, 1fr) 290px; align-items: center; gap: 24px; margin-top: 10px; }
+.lens-replay-controls { display: flex; align-items: center; gap: 6px; }
+.lens-replay-controls button { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); }
+.lens-replay-controls svg { width: 18px; height: 18px; }
+.lens-replay-controls button:hover { border-color: var(--lens-accent); }
+.lens-replay-controls [aria-disabled="true"] { opacity: .38; cursor: default; }
+.lens-replay #lens-replay-play { width: 46px; height: 46px; background: #224b43; border-color: #224b43; color: #f5f2df; }
+.lens-replay #lens-replay-play.active { background: var(--surface); border-color: var(--ink); color: var(--ink); }
+.lens-replay button:focus-visible { outline: 2px solid var(--lens-accent); outline-offset: 2px; }
+.lens-replay-track { position: relative; min-width: 0; }
+.lens-replay-strip { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); align-items: end; height: 38px; margin-inline: calc(var(--thumb) / 2 - (100% - var(--thumb)) / 46); cursor: pointer; }
+.lens-replay-strip i { position: relative; display: block; height: 100%; margin: 0 1px; }
+.lens-replay-strip i::before { content: ''; position: absolute; inset: auto 0 0; height: var(--h); background: var(--reading); border-radius: 3px 3px 1px 1px; }
+.lens-replay-strip i.gap::before { height: 0; border-bottom: 2px dashed var(--muted); border-radius: 0; background: none; opacity: .7; }
+.lens-replay-strip i.current::before { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
+.lens-replay-strip i.gap.current::before { box-sizing: border-box; height: 100%; border: 1.5px dashed var(--ink); border-radius: 3px; box-shadow: none; opacity: 1; }
+.lens-replay-playhead { position: absolute; top: -4px; left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--at)); width: 2px; height: 46px; margin-left: -1px; border-radius: 1px; background: var(--ink); opacity: .55; pointer-events: none; }
+.lens-replay.is-playing .lens-replay-playhead { transition: left .3s ease-out; }
+.lens-replay-slider { display: block; width: 100%; height: 30px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
+.lens-replay-slider::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--line); }
+.lens-replay-slider::-moz-range-track { height: 4px; border-radius: 2px; background: var(--line); }
+.lens-replay-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; box-sizing: border-box; width: var(--thumb); height: var(--thumb); margin-top: calc(2px - var(--thumb) / 2); border: 2px solid var(--ink); border-radius: 50%; background: var(--surface); box-shadow: 0 2px 6px #0003; }
+.lens-replay-slider::-moz-range-thumb { box-sizing: border-box; width: var(--thumb); height: var(--thumb); border: 2px solid var(--ink); border-radius: 50%; background: var(--surface); box-shadow: 0 2px 6px #0003; }
+.lens-replay-slider:focus-visible { outline: none; }
+.lens-replay-slider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--lens-accent); }
+.lens-replay-slider:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--lens-accent); }
+.lens-replay-ticks { position: relative; height: 13px; font: 500 9px var(--mono); color: var(--muted); }
+.lens-replay-ticks span { position: absolute; left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--at)); transform: translateX(-50%); white-space: nowrap; }
+.lens-replay-ticks span:first-child { transform: translateX(calc(var(--thumb) / -2)); }
+.lens-replay-ticks span:last-child { transform: translateX(calc(var(--thumb) / 2 - 100%)); color: var(--ink2); }
+.lens-replay-station { min-width: 0; padding-left: 20px; border-left: 1px solid var(--line); }
+.lens-replay-station > b { display: block; margin-top: 3px; overflow: hidden; font: 500 15px/1.25 var(--sans); white-space: nowrap; text-overflow: ellipsis; }
+.lens-replay-station #lens-replay-here { display: flex; align-items: center; gap: 6px; min-height: 20px; margin: 3px 0 0; font-size: 12px; color: var(--ink2); }
+#lens-replay-here i { width: 10px; height: 10px; border-radius: 2px; background: var(--reading); }
+#lens-replay-here b { font: 500 14px var(--mono); }
+.lens-replay-best { margin: 6px 0 0; font-size: 11px; line-height: 1.5; color: var(--muted); }
+.lens-replay-best span { display: block; font: 500 9px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.lens-replay-best b { color: var(--ink); font-weight: 500; }
+.lens-replay-best button { margin-left: 8px; padding: 0; border: 0; background: none; color: var(--lens-accent); font-size: 11px; text-decoration: underline; }
+.lens-replay-note { max-width: 1000px; margin: 10px 0 0; font-size: 10.5px; line-height: 1.5; color: var(--muted); }
+.lens-replay-note b { font-weight: 500; color: var(--ochre); }
+.lens-replay-flag { position: absolute; top: 24px; left: 50%; z-index: 2; display: flex; align-items: center; gap: 9px; margin: 0; padding: 5px 12px 5px 6px; transform: translateX(-50%); border: 1px solid var(--map-line); border-radius: 30px; background: var(--map-panel); color: var(--map-ink); font-size: 12px; white-space: nowrap; pointer-events: none; backdrop-filter: blur(12px); }
+.lens-replay-flag b { padding: 3px 8px; border-radius: 20px; background: #eacb79; color: #1d1c19; font: 600 9px var(--mono); letter-spacing: .14em; }
+.lens-marker.historical .lens-marker-value { outline: 1.5px solid #ffffffb8; outline-offset: -4px; }
+.lens-workspace.is-replaying .lens-pollutants button.active { border-color: transparent; background: none; }
+html[lang="hi"] .lens-replay-when b { font-family: var(--deva); }
+@media (prefers-color-scheme: dark) { .lens-replay #lens-replay-play { background: #b9cfbc; border-color: #b9cfbc; color: #19362e; } }
+@media (forced-colors: active) { .lens-replay-slider { -webkit-appearance: auto; appearance: auto; } .lens-replay-strip i::before { forced-color-adjust: none; } }
+@media (max-width: 1100px) { .lens-replay-body { grid-template-columns: auto minmax(0, 1fr) 230px; gap: 18px; } }
+/* Phone: the timeline sits straight under the map (before the pollutant row) so the markers and
+   the slider fit on one screen while scrubbing. DOM order still matches the visual order. */
+@media (max-width: 760px) {
+  .lens-replay { order: 1; padding: 13px 15px 15px; }
+  .lens-replay.is-closed { gap: 12px; padding-block: 11px; }
+  .lens-replay-intro { flex-direction: column; gap: 3px; }
+  .lens-replay-intro p { font-size: 13px; line-height: 1.35; }
+  .lens-replay.is-closed .lens-replay-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .lens-replay-open, .lens-replay-now { min-height: 44px; justify-content: center; }
+  .lens-replay.is-active { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "when now" "controls controls" "track track" "station station" "note note" "status status"; gap: 10px 12px; }
+  .lens-replay.is-active .lens-replay-head, .lens-replay.is-active .lens-replay-body { display: contents; }
+  .lens-replay.is-active #lens-replay-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+  .lens-replay.is-active .lens-replay-when { grid-area: when; flex-direction: column; gap: 2px; }
+  .lens-replay.is-active .lens-replay-now { grid-area: now; align-self: start; margin: 0; }
+  .lens-replay-head { flex-wrap: wrap; gap: 8px 12px; }
+  .lens-replay-controls { grid-area: controls; justify-content: center; gap: 14px; }
+  .lens-replay-controls button { width: 44px; height: 44px; }
+  .lens-replay #lens-replay-play { width: 52px; height: 52px; }
+  .lens-replay-track { grid-area: track; }
+  .lens-replay-station { grid-area: station; padding: 11px 0 0; border-left: 0; border-top: 1px solid var(--line); }
+  .lens-replay-best button { display: inline-block; min-height: 32px; }
+  .lens-replay-note { grid-area: note; margin: 0; font-size: 11px; }
+  .lens-replay-status { grid-area: status; }
+  /* while scrubbing the top of the map is scrolled away: the flag takes the decorative caption's place */
+  .lens-replay-flag { top: auto; bottom: 100px; left: 18px; transform: none; font-size: 11px; }
+  .lens-workspace.is-replaying .lens-scene-caption, .lens-workspace.is-replaying .lens-scene-bottom p { visibility: hidden; }
+}
