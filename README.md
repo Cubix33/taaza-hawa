@@ -65,13 +65,9 @@ Also: *"What will you do outside?"* chips (walk, jog, run, child playing) that e
 <img src="docs/screenshots/check.jpg" alt="The Check my air page"/>
 <p align="center"><b>Check my air</b><br/><sub>The answer, why, how old the number is, and the range on a CPCB-coloured dial.</sub></p>
 </td>
-<td width="19%" valign="top">
-<img src="docs/screenshots/mobile-home.jpg" alt="Home on a phone"/>
-<p align="center"><sub>Home on a phone</sub></p>
-</td>
-<td width="19%" valign="top">
-<img src="docs/screenshots/mobile-check.jpg" alt="Check my air on a phone"/>
-<p align="center"><sub>Check on a phone</sub></p>
+<td width="38%" valign="top">
+<img src="docs/screenshots/mobile.png" alt="Taaza Hawa open on an iPhone: the home page and the Check my air page"/>
+<p align="center"><b>On your phone</b><br/><sub>Installable, thumb-friendly, no login.</sub></p>
 </td>
 </tr>
 </table>
