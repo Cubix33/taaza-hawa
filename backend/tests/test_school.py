@@ -41,14 +41,40 @@ def test_register_decides_today_on_the_top_of_the_estimate():
     assert out["school"]["station"] == "Dwarka Sector 8"
 
 
-def test_no_plan_before_0630_and_the_key_is_required():
+def test_a_plan_made_at_night_is_made_again_at_0630_and_the_key_is_required():
     s = MemoryStore()
     seed(s, MORNING)
     code, out = post(s, "/school", {"name": "Early School", "uid": 2}, t=EARLY)
-    assert code == 201 and out["today"] is None and out["decides_at"] == "06:30"
+    assert code == 201 and out["today"]["early"] is True and out["today"]["decided_ts"] == EARLY
     assert get(s, {"id": out["school"]["id"], "k": "wrong"})[0] == 404
-    code, later = get(s, {"id": out["school"]["id"], "k": out["key"]})
-    assert code == 200 and later["today"]["basis"]["state"] == "fresh"
+    code, later = get(s, {"id": out["school"]["id"], "k": out["key"]})  # 07:00
+    assert code == 200 and later["today"]["decided_ts"] == MORNING and not later["today"]["early"]
+    assert later["today"]["basis"]["state"] == "fresh"
+
+
+def test_an_early_plan_someone_already_acted_on_is_kept():
+    s = MemoryStore()
+    seed(s, MORNING)
+    _, out = post(s, "/school", {"name": "Busy School", "uid": 1}, t=EARLY)
+    ident = {"id": out["school"]["id"], "k": out["key"]}
+    post(s, "/school/act", {**ident, "date": out["today"]["date"], "act": "inhalers", "done": True}, t=EARLY + 60)
+    later = get(s, ident)[1]
+    assert later["today"]["decided_ts"] == EARLY and later["today"]["acts"]["inhalers"] == EARLY + 60
+
+
+def test_tidy_deletes_old_days_and_plans_nobody_opens_once_a_day():
+    s = MemoryStore()
+    seed(s, MORNING)
+    _, used = post(s, "/school", {"name": "Used School", "uid": 1}, t=MORNING)
+    _, idle = post(s, "/school", {"name": "Idle School", "uid": 1}, t=MORNING)
+    used_id, idle_id = used["school"]["id"], idle["school"]["id"]
+    s.put(f"SDAY#{used_id}", "2026-01-01", {"date": "2026-01-01", "level": 2, "basis": {"state": "fresh"}})
+    later = MORNING + 50 * 86400
+    get(s, {"id": used_id, "k": used["key"]}, t=later - 86400)  # opened recently: kept
+    assert school.tidy(s, later) == {"plans": 1, "days": 1}
+    assert s.get("SCHOOL", idle_id) is None and s.get("SCHOOL", used_id)
+    assert s.get(f"SDAY#{used_id}", "2026-01-01") is None
+    assert school.tidy(s, later + 60) == {"plans": 0, "days": 0}  # once a day
 
 
 def test_the_plan_is_decided_once_and_kept_for_the_day():

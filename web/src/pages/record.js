@@ -1,6 +1,6 @@
 import { state, set } from "../lib/store.js";
 import { t, hi } from "../lib/i18n.js";
-import { esc, ageText } from "../lib/ui.js";
+import { accent, esc, ageText } from "../lib/ui.js";
 import { run, loadBoard } from "../lib/actions.js";
 
 export function load() {
@@ -26,7 +26,7 @@ function ring(rate) {
 
 export function view() {
   const real = state.board;
-  if (!real) return `<section class="page-head wrap"><div><p class="eyebrow">${t("navRecord")}</p><h1 class="page-title">${t("board")}</h1></div></section><div class="wrap"><div class="panel sk"><div class="sk-g"></div></div></div>`;
+  if (!real) return `<section class="page-head wrap"><div><p class="eyebrow">${t("navRecord")}</p><h1 class="page-title">${accent(t("board"))}</h1></div></section><div class="wrap"><div class="panel sk"><div class="sk-g"></div></div></div>`;
   // Default to real results; examples are an explicit user choice.
   const realGraded = real.accuracy?.graded ?? (real.tally.HIT + real.tally.MISSED);
   const canExample = true;
@@ -38,7 +38,7 @@ export function view() {
   const anyRow = b.rows.some((r) => Object.keys(r.days).length);
   const fmt = (d) => new Date(d + "T00:00:00").toLocaleDateString(hi() ? "hi-IN" : "en-IN", { day: "numeric", month: "short" });
   const since = (ts) => ageText(Math.max(0, Math.floor((b.now - ts) / 60)));
-  return `<section class="page-head wrap"><div><h1 class="page-title">${t("board")}</h1><p class="page-lead">${t("boardIntro")}</p></div></section>
+  return `<section class="page-head wrap"><div><p class="eyebrow">${t("navRecord")}</p><h1 class="page-title">${accent(t("board"))}</h1><p class="page-lead">${t("boardIntro")}</p></div></section>
   <div class="wrap ${example ? "is-example" : ""}" style="--ex-tag: '${t("exTag")}'">
     ${canExample ? `<div class="ex-banner ${example ? "on" : ""}">
       <p>${example ? t("exBanner") : t("exRealNote", realGraded)}</p>
@@ -55,8 +55,8 @@ export function view() {
       ${b.poll ? `<p class="muted small rs-poll">${t("feedAge")}: ${since(b.poll.at)} ${t("ago")}</p>` : ""}
     </section>
     ${accuracyView(b.accuracy)}
-    ${example ? "" : actionLedger(real.ledger)}
-    ${example ? "" : reliabilityView(real.reliability)}
+    ${actionLedger(b.ledger)}
+    ${reliabilityView(b.reliability)}
     ${b.participation ? `<p class="cpcb"><b>CPCB</b> ${esc(b.participation.line)}</p>` : ""}
     <div class="rec-cols">
       ${anyRow ? `<section class="panel grid">
@@ -187,6 +187,21 @@ function exampleBoard(real) {
     { s: pick(3), mins: 540, status: "MISSED_WAITING", lo: 195, hi: 230, actual: null },
     { s: pick(8), mins: 610, status: "HIT", lo: 176, hi: 209, actual: 193 },
   ].map((x) => ({ name: x.s.name, uid: x.s.uid, created_ts: now - x.mins * 60, lo: x.lo, hi: x.hi, status: x.status, actual: x.actual, miss_by: x.miss_by || 0 }));
-  return { ...real, dates, rows, tally, recent_holds: recent, participation: null,
+  // station reliability over a week: most stations report nearly every hour, a few go quiet
+  const W = 168;
+  const reliability = { window_h: W, stations: st.map((s, i) => {
+    const pct = i === 2 ? 58 : i === 0 ? 74 : i === 5 ? 86 : Math.round(93 + r() * 7);
+    const quiet = pct < 90;
+    return { uid: s.uid, name: s.name, pct, reported_h: Math.round((pct / 100) * W),
+      longest_gap_h: quiet ? Math.round(6 + (100 - pct) * 0.6) : 1 + Math.round(r() * 2), silences: quiet ? 1 + Math.round((100 - pct) / 15) : 0 };
+  }).sort((a, b) => a.pct - b.pct || a.name.localeCompare(b.name)) };
+  // the action ledger: poor-air mornings across organisations that joined, warned -> opened -> acted
+  const by_kind = { school: { warned: 20, seen: 18, acted: 15, no_response: 2 }, work: { warned: 18, seen: 15, acted: 12, no_response: 3 },
+    community: { warned: 8, seen: 6, acted: 4, no_response: 2 } };
+  const sum = (k) => Object.values(by_kind).reduce((a, x) => a + x[k], 0);
+  const ledger = { days: 30, orgs: { school: 6, work: 4, community: 3 }, by_kind,
+    total: { warned: sum("warned"), seen: sum("seen"), acted: sum("acted"), no_response: sum("no_response") },
+    top_actions: [["brief", 12], ["pe_in", 11], ["notify", 10], ["breaks_in", 9], ["inhalers", 8]].map(([act, n]) => ({ act, n })) };
+  return { ...real, dates, rows, tally, recent_holds: recent, participation: null, reliability, ledger,
     accuracy: { hits, graded, unverified, target: 0.8, stations: per.sort((a, b) => b.graded - a.graded || a.name.localeCompare(b.name)) } };
 }

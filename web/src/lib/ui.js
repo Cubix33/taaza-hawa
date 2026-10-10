@@ -13,6 +13,11 @@ export function ageText(min, lang = state.lang) {
   if (h < 48) return `${h} ${h_ ? "घंटे" : "h"}`;
   return `${Math.floor(h / 24)} ${h_ ? "दिन" : "days"}`;
 }
+// Air Lens-style display title: the last word in italic accent ("Air <em>Lens.</em>")
+export function accent(s) {
+  const str = esc(s), m = str.match(/^([\s\S]*\s)(\S+)$/);
+  return m ? `${m[1]}<em>${m[2]}</em>` : `<em>${str}</em>`;
+}
 export const isOld = (s) => s.age_min == null || s.age_min > STALE_MIN;
 
 // CPCB AQI bands: colour is data, never decoration
@@ -45,6 +50,7 @@ export const icon = {
   map: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2" fill="currentColor"/><circle cx="17" cy="6" r="2" fill="currentColor"/><circle cx="12" cy="13" r="2" fill="currentColor"/><circle cx="7" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="17" r="2" fill="currentColor"/></svg>`,
   record: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 12l2.5 2.5L16 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   school: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20v-8.5L12 7l7 4.5V20M12 7V3.5h4.5v2.2H12M10 20v-4.5h4V20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
+  satellite: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6.5l3-3 4 4-3 3zM10.5 13.5l-3 3-4-4 3-3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 9l6 6M14.5 17.5a3 3 0 0 0 3-3M14.5 20.5a6 6 0 0 0 6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
   helmet: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 17h17M5 17v-2.5a7 7 0 0 1 14 0V17M10 8V6h4v2M12 8v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   people: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="9.5" r="2.3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M14.5 15.2A4.5 4.5 0 0 1 21 19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
   mail: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 7.5l7.5 5.5 7.5-5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,

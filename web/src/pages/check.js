@@ -1,6 +1,6 @@
 import { state, set, ls } from "../lib/store.js";
 import { t, hi } from "../lib/i18n.js";
-import { esc, ageText, isOld, icon, gauge, scale, bandName, bandColor, fireView } from "../lib/ui.js";
+import { accent, esc, ageText, isOld, icon, gauge, scale, bandName, bandColor, fireView } from "../lib/ui.js";
 import { run, loadCard, restoreHold, goStation, startHold, addEmail, toggleSpeak, explainMismatch } from "../lib/actions.js";
 import { pickerView, bindPicker } from "../lib/picker.js";
 
@@ -14,7 +14,7 @@ export function load() {
 export function view() {
   const c = state.card;
   return `<section class="page-head wrap">
-      <div><p class="eyebrow">${t("navCheck")}</p><h1 class="page-title">${esc(hi() ? "अभी बाहर जाऊँ?" : "Can I go outside right now?")}</h1></div>
+      <div><p class="eyebrow">${t("navCheck")}</p><h1 class="page-title">${accent(hi() ? "अभी बाहर जाऊँ?" : "Can I go outside right now?")}</h1></div>
       ${pickerView(state.uid)}
     </section>
     <div class="wrap">${c ? card(c) : skeleton()}</div>`;

@@ -51,6 +51,8 @@ DEFAULT_SHIFT = (8, 18)
 DECIDE_AT = service.MORNING_AT  # 06:30 IST, the same run as the public morning estimates
 SEND_UNTIL_HOUR = 10  # a late catch-up run must not email a "morning" plan at lunchtime
 HISTORY_DAYS = 30
+KEEP_DAYS = 60       # daily records older than this are deleted
+IDLE_DAYS = 45       # a plan nobody has opened for this long is deleted, with its record
 
 
 def level_for(aqi: float) -> int:
@@ -190,12 +192,12 @@ def _reading(store: Store, uid: int, now_ts: int) -> dict | None:
 
 
 def ensure_day(store: Store, school: dict, now_ts: int) -> dict | None:
-    """Today's plan, decided once (at 06:30, or at sign-up if that is later) and then kept."""
-    if not _decided_yet(now_ts):
-        return None
+    """Today's plan. Made when first needed, at any hour, from the latest reading. A plan made before
+    06:30 is "early": the first look after 06:30 makes it again from the morning's reading, unless
+    someone has already ticked something on it. After that it is kept for the day."""
     date = service.ist_date(now_ts)
     day = store.get(f"SDAY#{school['id']}", date)
-    if day:
+    if day and not (day.get("early") and _decided_yet(now_ts) and not day.get("acts") and not day.get("action")):
         return day
     kind = school.get("kind", "school")
     if kind == "work":
@@ -216,6 +218,8 @@ def ensure_day(store: Store, school: dict, now_ts: int) -> dict | None:
         day = {"date": date, "uid": r["uid"], "station": r["station"], "decided_ts": now_ts,
                "level": r["level"], "basis": r["basis"]}
     day["kind"] = kind
+    if not _decided_yet(now_ts):
+        day["early"] = True
     fires = smoke.current(store, now_ts)  # the context as it stood when the plan was made
     if fires:
         day["fires"] = {k: fires.get(k) for k in ("total", "upwind", "wind_from", "window_h", "radius_km")}
@@ -258,6 +262,7 @@ def morning(store: Store, now_ts: int, send=None) -> dict:
         return {"days": 0, "emailed": 0}
     late = datetime.fromtimestamp(now_ts, service.IST).hour >= SEND_UNTIL_HOUR
     days = emailed = 0
+    tidy(store, now_ts)
     for school in store.query("SCHOOL"):
         day = ensure_day(store, school, now_ts)
         if not day:
@@ -273,6 +278,27 @@ def morning(store: Store, now_ts: int, send=None) -> dict:
             store.put(day["pk"], day["sk"], day)
             emailed += 1
     return {"days": days, "emailed": emailed}
+
+
+def tidy(store: Store, now_ts: int) -> dict:
+    """Once a day: delete daily records older than KEEP_DAYS, and plans nobody has opened for
+    IDLE_DAYS (with everything they hold). Nothing else is ever deleted automatically."""
+    today = service.ist_date(now_ts)
+    if (store.get("KV", "plan_tidy") or {}).get("date") == today:
+        return {"plans": 0, "days": 0}
+    cut = (datetime.fromtimestamp(now_ts, service.IST).date() - timedelta(days=KEEP_DAYS)).isoformat()
+    plans = days = 0
+    for org in store.query("SCHOOL"):
+        if now_ts - org.get("last_seen_ts", org["created_ts"]) > IDLE_DAYS * 86400:
+            remove(store, org)
+            plans += 1
+            continue
+        for d in store.query(f"SDAY#{org['id']}"):
+            if d["date"] < cut:
+                store.delete(d["pk"], d["sk"])
+                days += 1
+    store.put("KV", "plan_tidy", {"date": today, "plans": plans, "days": days})
+    return {"plans": plans, "days": days}
 
 
 # ---------- what the pages see ----------
@@ -294,7 +320,7 @@ def _basis(b: dict) -> dict:
 
 
 def _public_day(store: Store, d: dict, kind: str) -> dict:
-    keep = ("date", "uid", "station", "decided_ts", "level", "action", "emailed", "seen_ts")
+    keep = ("date", "uid", "station", "decided_ts", "level", "action", "emailed", "seen_ts", "early")
     out = {k: d.get(k) for k in keep}
     out["basis"] = _basis(d["basis"])
     out["plan"] = plan(d.get("level"), kind)
@@ -339,6 +365,9 @@ def _zones_view(store: Store, school: dict) -> list[dict] | None:
 
 
 def view(store: Store, school: dict, now_ts: int) -> dict:
+    if now_ts - school.get("last_seen_ts", 0) > 3600:  # opened: keeps the plan from being tidied away
+        school["last_seen_ts"] = now_ts
+        store.put("SCHOOL", school["id"], school)
     today_day = ensure_day(store, school, now_ts)
     if today_day and not today_day.get("seen_ts"):  # the plan was opened: acknowledged
         today_day["seen_ts"] = now_ts

@@ -5,7 +5,7 @@
 import "../plan.css";
 import { state } from "../lib/store.js";
 import { t } from "../lib/i18n.js";
-import { esc, icon } from "../lib/ui.js";
+import { esc, icon, accent } from "../lib/ui.js";
 import { zoneRows } from "./plan.js";
 import { api } from "../lib/api.js";
 import { run } from "../lib/actions.js";
@@ -37,11 +37,11 @@ function tips(level) {
 }
 
 export function view() {
-  if (gone) return `<section class="page-head wrap"><div><h1 class="page-title">${t("znTitle")}</h1></div></section>
+  if (gone) return `<section class="page-head wrap"><div><h1 class="page-title">${accent(t("znTitle"))}</h1></div></section>
     <div class="wrap"><section class="panel"><p>${t("znGone")}</p></section></div>`;
   if (!page) return `<div class="wrap"><div class="panel sk"><div class="sk-l w40"></div><div class="sk-l big w90"></div></div></div>`;
   const d = page.today;
-  const headTop = `<section class="page-head wrap"><div><p class="eyebrow">${esc(page.name)}</p><h1 class="page-title">${t("znTitle")}</h1>${d ? `<p class="page-lead">${fmtDate(d.date)}</p>` : ""}</div></section>`;
+  const headTop = `<section class="page-head wrap"><div><p class="eyebrow">${esc(page.name)}</p><h1 class="page-title">${accent(t("znTitle"))}</h1>${d ? `<p class="page-lead">${fmtDate(d.date)}</p>` : ""}</div></section>`;
   if (!d) return `${headTop}<div class="wrap zn"><section class="hero-card sc-today lv-none"><h2 class="ans">${t("znPending")}</h2></section></div>`;
   return `${headTop}
   <div class="wrap zn">

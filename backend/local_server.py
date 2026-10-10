@@ -115,8 +115,6 @@ if __name__ == "__main__":
     else:
         STORE = demo.seed(now())
         service.morning_predictions(STORE, now())
-        # demo only: plans are decided whenever you look, so a rehearsal at night isn't empty
-        school.DECIDE_AT = (0, 0)
         print("Demo Bad-air plan network (open a link to see that organisation):")
         network = demo.seed_network(STORE, now())
         school.morning(STORE, now())

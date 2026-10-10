@@ -1,5 +1,5 @@
 import { t } from "../lib/i18n.js";
-import { esc, icon, BAND_COLORS } from "../lib/ui.js";
+import { esc, icon, BAND_COLORS, accent } from "../lib/ui.js";
 
 export const load = () => Promise.resolve();
 
@@ -7,7 +7,7 @@ const FLOW = ["EventBridge Scheduler", "Lambda · poller", "DynamoDB", "Step Fun
 const SERVICES = ["EventBridge Scheduler", "Lambda", "DynamoDB", "Step Functions", "SES", "Amplify Hosting", "CloudWatch", "Bedrock (optional)", "Polly", "Location Service"];
 
 export function view() {
-  return `<section class="page-head wrap"><div><p class="eyebrow">${t("navAbout")}</p><h1 class="page-title">${t("abTitle")}</h1><p class="page-lead">${t("abLead")}</p></div></section>
+  return `<section class="page-head wrap"><div><p class="eyebrow">${t("navAbout")}</p><h1 class="page-title">${accent(t("abTitle"))}</h1><p class="page-lead">${t("abLead")}</p></div></section>
   <div class="wrap about">
     <ol class="how-grid compact">${["how1", "how2", "how3"].map((k, i) => `<li class="how-card"><span class="how-n">${i + 1}</span><h3>${t(k)[0]}</h3><p>${t(k)[1]}</p></li>`).join("")}</ol>
 

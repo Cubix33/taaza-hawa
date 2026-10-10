@@ -11,7 +11,7 @@
 import "../plan.css";
 import { state, set, ls } from "../lib/store.js";
 import { t, T } from "../lib/i18n.js";
-import { esc, ageText, icon, fireText, bandName } from "../lib/ui.js";
+import { esc, ageText, icon, fireText, bandName, accent } from "../lib/ui.js";
 import { api, post } from "../lib/api.js";
 import { run, loadStations } from "../lib/actions.js";
 import { pickerView, bindPicker } from "../lib/picker.js";
@@ -56,6 +56,7 @@ const blank = () => ({ kind: "school", name: "", uid: null, place: null, auto: f
 const form = blank();
 const chg = { ...blank(), open: false };
 let creating = false; // "New plan" while another plan is open
+let mineOpen = false; // the "My plans" list is showing
 let note = null;      // { text, ok } one line under the header
 let mailEdit = false; // the automatic-email box is showing its address field
 let copied = "";      // which copy button just copied
@@ -196,8 +197,10 @@ const kindFields = (m) => (m.kind === "work" ? workFields(m) : placeFields(m));
 
 function signup() {
   if (form.uid == null) form.uid = state.uid;
-  const back = creating && current() ? `<button id="plback" type="button" class="pl-link">← ${t("plBack")}</button>` : "";
-  return `<section class="page-head wrap pl-head"><div><p class="eyebrow">${t("navSchool")}</p><h1 class="page-title">${t("scTitle")}</h1><p class="page-lead">${t("scLead")}</p></div></section>
+  const n = plans().length;
+  const back = n ? `<div class="pl-signup-mine">${creating && current() ? `<button id="plback" type="button" class="pl-link">← ${t("plBack")}</button>` : ""}
+    <button id="plmine" type="button" class="btn ghost" aria-expanded="${mineOpen}">${t("plMy", n)}</button></div>${myPlans(null)}` : "";
+  return `<section class="page-head wrap pl-head"><div><p class="eyebrow">${t("navSchool")}</p><h1 class="page-title">${accent(t("scTitle"))}</h1><p class="page-lead">${t("scLead")}</p></div></section>
   <div class="wrap pl">
     ${noteLine()}
     ${back}
@@ -314,24 +317,38 @@ function header(v) {
   const where = kind === "work"
     ? t("scZonesLine", s.zones?.length || 0, hh(s.shift?.[0] ?? 8), hh(s.shift?.[1] ?? 18))
     : `${esc(stationName(s.station))}${s.station_km != null ? ` · ${t("scKmFrom", s.station_km)}` : ""}`;
-  const others = list.filter((p) => p.id !== s.id && p.name);
   return `<section class="page-head wrap pl-head"><div>
       <p class="eyebrow">${t("navSchool")}</p>
       <h1 class="page-title">${esc(s.name)}</h1>
       <p class="pl-meta"><span class="pl-kind">${KIND_IC[kind]}${t("scKinds")[kind][0]}</span><span>${kind === "work" ? icon.clock : icon.pin}${where}</span></p>
-      ${others.length ? `<p class="pl-mine"><span>${t("plMine")}:</span>${[{ id: s.id, name: s.name, kind }, ...others].map((p) =>
-        `<button type="button" class="pl-chip ${p.id === s.id ? "on" : ""}" data-plan="${esc(p.id)}">${KIND_IC[p.kind] || ""}${esc(p.name)}</button>`).join("")}</p>` : ""}
     </div>
     <div class="pl-head-act">
       ${chg.open ? "" : `<button id="scchange" type="button" class="btn ghost">${t("plEdit")}</button>`}
+      <button id="plmine" type="button" class="btn ghost" aria-expanded="${mineOpen}">${t("plMy", list.length)}</button>
       <button id="plnew" type="button" class="btn ghost">+ ${t("plNew")}</button>
     </div>
   </section>`;
 }
 
+// "My plans": every plan kept on this phone, grouped by kind, each with Open and Delete
+function myPlans(currentId) {
+  if (!mineOpen) return "";
+  const list = plans();
+  if (!list.length) return `<div class="panel pl-mylist"><p class="muted">${t("plNone")}</p></div>`;
+  const groups = KINDS.map((k) => [k, list.filter((p) => (p.kind || "school") === k)]).filter(([, ps]) => ps.length);
+  return `<div class="panel pl-mylist">
+    ${groups.map(([k, ps]) => `<div class="pl-group"><p class="pl-group-h">${KIND_IC[k]}${t("scKinds")[k][0]}</p>
+      <ul>${ps.map((p) => `<li class="${p.id === currentId ? "on" : ""}"><b>${esc(p.name || t("plUnnamed"))}</b>
+        ${p.id === currentId ? `<span class="pl-now">${t("plOpenNow")}</span>` : `<button type="button" class="btn ghost" data-open="${esc(p.id)}">${t("plOpen")}</button>`}
+        <button type="button" class="pl-del" data-del="${esc(p.id)}" aria-label="${esc(t("plDelete"))}: ${esc(p.name || "")}">${t("plDelete")}</button></li>`).join("")}</ul></div>`).join("")}
+    <p class="muted small">${t("plTidy")}</p>
+  </div>`;
+}
+
 function dashboard(v) {
   return `${header(v)}
   <div class="wrap pl">
+    ${myPlans(v.school.id)}
     ${noteLine()}
     ${chg.open ? editPanel() : ""}
     ${today(v)}
@@ -375,6 +392,7 @@ function today(v) {
   const fires = d.fires ? `<p class="sc-basis pl-fires">${fireText(d.fires)} ${t("plFireNote")}</p>` : "";
   return section(`${t("plAirTitle")} · ${fmtDate(d.date)}`, t("plMadeAt", fmtTime(d.decided_ts)), `<div class="hero-card sc-today lv-${lv(d)}">
     <h3 class="ans">${headFor(kind, lv(d))}</h3>
+    ${d.early ? `<p class="pl-early">${icon.clock}<span>${t("plEarly")}</span></p>` : ""}
     ${detail}
     ${fires}
   </div>`);
@@ -607,18 +625,41 @@ function openPlan(id) {
   run(() => loadPlan());
 }
 
+// delete a plan for everyone (it needs that plan's key, kept on this phone), then forget it here
+async function deletePlan(id) {
+  const p = plans().find((x) => x.id === id);
+  if (!p || !confirm(t("plDeleteQ", p.name || t("plUnnamed")))) return;
+  set({ busy: true });
+  try {
+    await post("/school/delete", { id: p.id, k: p.k });
+  } catch (e) {
+    if (!/unknown school/.test(e.message)) { note = { text: e.message, ok: false }; set({ busy: false }); return; }
+  }
+  forget(id);
+  note = null;
+  if (state.school?.school.id === id) { state.school = null; chg.open = false; if (current() && !creating) await loadPlan(); }
+  set({ busy: false });
+}
+
+function bindMine() {
+  document.getElementById("plmine")?.addEventListener("click", () => { mineOpen = !mineOpen; set({}); });
+  document.querySelectorAll("[data-open]").forEach((b) => b.addEventListener("click", () => { mineOpen = false; openPlan(b.dataset.open); }));
+  document.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => deletePlan(b.dataset.del)));
+}
+
 export function bind() {
   const $ = (id) => document.getElementById(id);
   if (!state.school || creating) {
     $("scform")?.addEventListener("submit", signupSubmit);
     $("plback")?.addEventListener("click", () => openPlan(current().id));
+    bindMine();
     bindFields(form);
     return;
   }
   const s = state.school.school;
   $("plnew")?.addEventListener("click", startNew);
   $("plnew2")?.addEventListener("click", startNew);
-  document.querySelectorAll("[data-plan]").forEach((b) => b.addEventListener("click", () => { if (b.dataset.plan !== s.id) openPlan(b.dataset.plan); }));
+  bindMine();
   $("scchange")?.addEventListener("click", () => {
     Object.assign(chg, { open: true, kind: s.kind || "school", name: s.name, uid: s.uid, place: s.place || null, auto: false,
       zones: (s.zones || []).map((z) => ({ name: z.name, uid: z.uid, place: z.place || null })), shift: [...(s.shift || [8, 18])] });
@@ -648,15 +689,5 @@ export function bind() {
   $("mailoff")?.addEventListener("click", () => call("/school/edit", { email: "" }, () => { mailEdit = false; }));
   $("copylink")?.addEventListener("click", () => copy("sclink", "link"));
   $("copycrew")?.addEventListener("click", () => copy("crewlink", "crew"));
-  $("scremove")?.addEventListener("click", async () => {
-    if (!confirm(t("scRemoveQ"))) return;
-    set({ busy: true });
-    try {
-      await post("/school/delete", ident());
-      forget(s.id);
-      state.school = null; note = null; chg.open = false;
-      if (current()) await loadPlan();
-    } catch (e) { note = { text: e.message, ok: false }; }
-    set({ busy: false });
-  });
+  $("scremove")?.addEventListener("click", () => deletePlan(s.id));
 }
