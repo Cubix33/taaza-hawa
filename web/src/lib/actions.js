@@ -108,6 +108,13 @@ export async function addEmail() {
   set({});
 }
 
+export async function explainMismatch(body) {
+  set({ explainBusy: true });
+  try { state.explanation = await post("/explain", { uid: state.uid, lang: state.lang, ...body }); }
+  catch (e) { state.explainError = e.message; }
+  set({ explainBusy: false });
+}
+
 export async function pollHold() {
   if (!state.hold || state.hold.status !== "PENDING") return;
   try {

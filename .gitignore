@@ -10,3 +10,6 @@ __pycache__/
 .aws-sam/
 samconfig.toml
 suggestions.md
+
+# Air Lens comparison builds (tools/compare_airlens.py)
+.airlens-compare/

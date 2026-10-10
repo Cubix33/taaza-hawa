@@ -26,6 +26,9 @@ export const state = {
   history: null,
   voice: "",
   voiceErr: false,
+  explanation: null,
+  explainBusy: false,
+  explainError: null,
 };
 
 let _render = () => {};

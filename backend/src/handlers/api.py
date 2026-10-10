@@ -2,13 +2,31 @@
 import json
 import os
 import re
+import hashlib
 
-from taaza import mail, phrase, places, reliability, school, service, smoke, speech
+from taaza import explain, jev, mail, phrase, places, reliability, school, service, smoke, speech
 
 from .common import now, sfn, store
 
 DEFAULT_UID = int(os.environ.get("DEFAULT_STATION_UID", "0"))
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _safe_jev(raw):
+    """Only cache fixed labels and probabilities; never provider metadata or user text."""
+    answers = raw.get("answers", raw) if isinstance(raw, dict) else {}
+    out = {}
+    for key in ("mismatch_kind", "source", "says_ugm3", "indoors", "indoor_smoke", "fog_or_humid"):
+        value = answers.get(key, {}) if isinstance(answers, dict) else {}
+        if not isinstance(value, dict):
+            continue
+        if "choice" in value:
+            out[key] = {"choice": value["choice"], "confidence": value.get("confidence", 0)}
+        elif "noul" in value:
+            out[key] = {"noul": value["noul"]}
+        elif "value" in value:  # test seam / already-normalized answer
+            out[key] = {"value": value["value"], "confidence": value.get("confidence", 0)}
+    return out
 
 
 def email_enabled():
@@ -28,7 +46,7 @@ def _recent_dates(t, n=4):
     return [(d - timedelta(days=i)).isoformat() for i in reversed(range(n))]
 
 
-def route(method, path, q, body, s, t, start_execution=None):
+def route(method, path, q, body, s, t, start_execution=None, jev_client=None):
     if path == "/health":
         poll = s.get("KV", "poll")
         return 200, {"ok": True, "now": t, "last_poll": poll,
@@ -47,6 +65,33 @@ def route(method, path, q, body, s, t, start_execution=None):
         card["reliability"] = reliability.for_station(s, uid, t)
         card["fires"] = smoke.current(s, t)
         return 200, card
+    if path == "/explain" and method == "POST":
+        uid = int(body.get("uid") or DEFAULT_UID)
+        lang = body.get("lang") if body.get("lang") in ("hi", "en") else "hi"
+        text = str(body.get("text") or "").strip()[:280]
+        has_explicit = any(body.get(k) is not None for k in ("source", "unit", "indoors"))
+        dev = bool(re.search(r"[\u0900-\u097F]", text))
+        langs = {x.strip() for x in os.environ.get("JEV_LANGS", "en,hinglish").split(",")}
+        status, raw = "off", None
+        if text and not has_explicit and (jev_client is not None or jev.enabled()) and (not dev or "hi" in langs):
+            key = "jev#" + hashlib.sha256(text.lower().encode()).hexdigest()
+            hit = s.get("KV", key)
+            if hit: raw, status = hit["answer"], "used"
+            else:
+                raw = (jev_client or jev.classify)(text)
+                if raw is None: status = "error"
+                else:
+                    raw = _safe_jev(raw)
+                    s.put("KV", key, {"answer": raw})
+                    status = "used"
+        elif text and dev and "hi" not in langs: status = "skipped_lang"
+        out = explain.build(s, uid, t, lang, raw, {**body, "text": text})
+        if not out: return 404, {"error": "unknown station"}
+        if status == "used" and any(v["value"] == "unknown" for k, v in out["understood"].items() if k != "number"):
+            status = "low_confidence"
+        out["jev"] = status
+        out["demo"] = False
+        return 200, out
     if path == "/speak" and method == "GET":
         card = service.build_card(s, int(q.get("uid") or DEFAULT_UID), t)
         if not card:
