@@ -28,7 +28,7 @@ WeMakeDevs × AWS **Environmental Hacks 2026**
 
 ## Contents
 
-[The problem](#the-problem) · [What it does](#what-it-does) · [For schools](#for-schools) · [A tour](#a-tour) · [How the loop works](#how-the-loop-works) · [Architecture](#architecture) · [Honest by design](#honest-by-design) · [Run it](#run-it-locally) · [Deploy](#deploy-to-aws) · [API](#api) · [Repo layout](#repository-layout) · [Status](#status) · [Research](#research-behind-it)
+[The problem](#the-problem) · [What it does](#what-it-does) · [For schools](#for-schools) · [A tour](#a-tour) · [How the loop works](#how-the-loop-works) · [Architecture](#architecture) · [Where AI is used](#where-ai-is-used) · [Honest by design](#honest-by-design) · [Run it](#run-it-locally) · [Deploy](#deploy-to-aws) · [API](#api) · [Repo layout](#repository-layout) · [Status](#status) · [Research](#research-behind-it)
 
 ---
 
@@ -51,6 +51,7 @@ The same call is made every school morning, before assembly, for a whole playgro
 | **An honest range when it's old** | If a station's number is over 3 h old, the app shows *"AQI probably 232–264"*: a split-conformal interval built from the 3 nearest live stations plus bias-corrected CAMS. Advice uses the top of the range, to be careful. |
 | **Hold me to this** | One tap, no account. An **AWS Step Functions** execution waits (at no compute cost) until that station reports again, then the page shows whether the real number landed inside our range. |
 | **A public track record** | Every morning, every station: right or missed by N. Misses are shown as clearly as hits, with the hit rate against an 80 % target and the number of checks always visible. |
+| **"Wait, until when?"** | For a WAIT or STAY card, an hourly **Amazon Chronos** forecast gives a range for each of the next 3 hours and says when air is likely back under the threshold, or says plainly that it can't tell. It never changes the verdict, and every forecast is graded in public against the station's later readings. Currently in *shadow mode*: graded privately, not yet shown. See [Where AI is used](#where-ai-is-used). |
 | **Listen** | A Hindi/English voice (Amazon Polly, *Kajal*) reads the answer aloud, for people who don't read easily. |
 | **Air Lens** | Explore Delhi in a dusk/day 3D map, fly into real building geometry, select floating station readings, and see the actual inputs behind an estimate. Includes location pins, pollutant switching, search, a flat view, and a keyboard-accessible station list. |
 | **Share on WhatsApp** | One tap sends the verdict, the station and the age of the number to family. |
@@ -154,6 +155,9 @@ flowchart LR
   P -->|station reports again<br/>SendTaskSuccess| SF
   SF --> N[Lambda: notify] --> E[SES emails<br/>check results · school plans]
   P -->|06:30 school plans| E
+  H[EventBridge · hourly :20 IST] --> F[Lambda container image<br/>Chronos-Bolt-tiny, CPU]
+  F -->|reads 72 h of readings<br/>writes 3-hour quantile forecasts| D
+  P -->|new reading grades<br/>earlier forecasts| D
   A -->|find a school| L[Amazon Location Service<br/>place search]
   A -->|listen| PL[Amazon Polly · Kajal<br/>spoken answer, cached]
   A -.optional.-> B[Bedrock · Claude Haiku 4.5<br/>Hindi phrasing only]
@@ -162,7 +166,8 @@ flowchart LR
 | Service | Why this one |
 |---|---|
 | **EventBridge Scheduler** | 15-minute polling plus the 06:30 and 17:30 IST jobs, with no server |
-| **Lambda** (5 functions) | Poller, API, and the three steps of a check. Pure functions, unit-tested |
+| **Lambda** (6 functions) | Poller, API, the three steps of a check, and the hourly forecast job. Core logic is pure functions, unit-tested |
+| **Lambda container image + Amazon Chronos** | Runs the open-source Chronos-Bolt-tiny forecasting model on CPU, zero-shot, once an hour. The weights are pinned to a revision and baked into the image at build time, so nothing is downloaded at runtime |
 | **DynamoDB** | One pay-per-request table: readings, calibration, promises, task tokens, cached audio, schools and their daily plans |
 | **Step Functions Standard** | A check *is* a waiting execution. It waits up to 72 h for free, and you can watch it flip from Running to Succeeded |
 | **Lambda Function URL** | A public API without API Gateway |
@@ -173,8 +178,23 @@ flowchart LR
 | **CloudWatch** | Alarm when the poller keeps failing |
 | **Bedrock** *(optional)* | Rephrases one Hindi sentence. A guard rejects any change to a number; it never decides anything |
 
+## Where AI is used
+
+AI is used in three places, and in each one it does a narrow job that a person can check. In none of them does it decide whether you should go outside.
+
+| Where | Model | What it does | What stops it overreaching |
+|---|---|---|---|
+| **Stale-number estimate** | Statistical (split-conformal), not a neural net | Estimates a station's current value from its 3 nearest live neighbours and bias-corrected CAMS | The error is recorded on every poll and the range is calibrated to 80 % coverage. It is graded by the station's own next reading |
+| **3-hour forecast** | **Amazon Chronos-Bolt-tiny**, pretrained, zero-shot | Turns a station's last 72 hourly readings into low / median / high values for the next 3 hours, so a WAIT card can say *when* | The model only supplies numbers. `forecast.py` owns the rules: stations with long gaps are skipped, quantiles must be ordered, a forecast over 90 minutes old is never shown, and it is shown only on WAIT or STAY cards. Each hour is graded against a later real reading, and a miss is recorded as plainly as a hit |
+| **Hindi phrasing** *(optional)* | Claude Haiku 4.5 on Bedrock | Rephrases one Hindi sentence | A guard rejects any change to a number. It has no say in the verdict |
+
+**Why a forecasting model and not an LLM for predictions.** Chronos is built for time series and returns calibrated quantiles directly. An LLM would give fluent text with no measurable error bar.
+
+**Why it is not switched on yet.** Earlier research found that day-ahead smoke forecasts barely beat "same as now" ([spec](docs/chronosforecastspec.md)). So the job runs in `shadow` mode first and builds a private graded record. `ForecastMode=on` is a manual switch, made only after those results beat the simple baseline. A public record full of misses would hurt trust more than having no forecast.
+
 ## Honest by design
 
+- **A forecast never decides the verdict.** The go / wait / stay-in call comes from the published CPCB rule on the current number. The forecast is an extra line under it, with its age.
 - **Calibrated on live data.** On every poll, each fresh station is *re-estimated with its own reading hidden*, from its neighbours and CAMS, and the error is recorded. Ranges use split-conformal quantiles targeting 80 % coverage.
 - **Says when it isn't ready.** Until a station has 20 recorded errors, its range is labelled *calibration warming up* and widens with the number's age.
 - **Never fakes a track record.** While fewer than 5 real checks exist, the record page shows an example that is *clearly labelled* (striped banner and an "Example" tag on every section) with a switch to real data; it vanishes automatically once real results arrive.
@@ -255,7 +275,8 @@ backend/
   src/taaza/          core logic: AQI maths, freshness, conformal, estimator, grader, speech, store, copy,
                       school plans, place search, fire context, station reliability, mail
   src/taaza/sources/  WAQI, Open-Meteo CAMS and wind, NASA FIRMS, CPCB bulletin
-  src/handlers/       Lambda entry points: poller, api, hold_tasks
+  src/handlers/       Lambda entry points: poller, api, hold_tasks, forecast (Chronos)
+  Dockerfile.forecast container image with CPU torch and pinned Chronos-Bolt-tiny weights
   tests/              51 unit tests, incl. the stale → check → graded loop, school plans and the Polly request shape
   local_server.py     the same API locally: demo data, or --live feeds
 infra/
@@ -278,6 +299,8 @@ Built during the hack window (8–11 Oct 2026). Open work is tracked as [issues]
 - [x] Fire context (NASA FIRMS) and station reliability
 - [x] Deployed to AWS and hosted on Amplify
 - [x] Live WAQI scale check (K3): WAQI publishes US-EPA AQI from 1-hour readings, so `parse_feed` converts it back to CPCB sub-indices; it also reads the real UTC time (`time.v` is local wall clock)
+- [x] Chronos forecast job deployed in shadow mode (hourly schedule, graded against later readings)
+- [ ] Enough station history (72 h) to produce the first forecasts, then an offline backtest against "same as now" before `ForecastMode=on`
 - [ ] The real Dwarka default station
 - [ ] CPCB bulletin parser checked on a real PDF
 - [ ] End-to-end "Hold me to this" loop recorded on AWS
