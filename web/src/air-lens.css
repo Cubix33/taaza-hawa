@@ -349,3 +349,11 @@ html[lang="hi"] .lens-replay-when b { font-family: var(--deva); }
 .lens-scene-bottom .lens-sky-caption { margin: -12px 0 16px; max-width: 54ch; font-size: 10.5px; line-height: 1.45; color: var(--map-muted); text-shadow: 0 0 3px #15292c, 0 0 9px #15292c; }
 .lens-stage.day .lens-sky-caption { text-shadow: 0 0 3px #e8e4d8, 0 0 9px #e8e4d8; }
 @media (max-width: 760px) { .lens-scene-bottom .lens-sky-caption { margin: -8px 0 12px; font-size: 10px; max-width: none; } }
+
+/* ---- Declutter after merging all four features: fewer words on the map, disclosures kept. ---- */
+.lens-scene-bottom > p:not(.lens-sky-caption) { display: none; }
+@media (max-width: 760px) {
+  .lens-scene-caption { display: none; }
+  .lens-scene-bottom { bottom: 38px; }
+  .lens-wind-footnote { display: none; }
+}
