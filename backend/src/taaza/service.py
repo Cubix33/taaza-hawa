@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import secrets
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Callable
 
-from . import grader, texts
+from . import forecast, grader, texts
 from .aqi import LABEL, POLLUTANTS, answer_for, band_names, cpcb_from_us
 from .estimate import Estimate, Neighbour, estimate, neighbour_mean
 from .freshness import age_minutes, is_stale
@@ -98,10 +99,13 @@ def ingest(store: Store, readings: list[StationReading], cams: dict[int, dict[st
         if age_minutes(now_ts, r.ts) <= 180:
             _calibrate(store, meta, r, cams, now_ts, stations)
         graded += _resolve(store, meta, r, now_ts, on_hold_graded)
+        forecast.resolve(store, r.uid, {"ts": r.ts, "values": r.values}, now_ts)
     expired = _expire_morning(store, stations, now_ts)
+    forecast_expired = forecast.expire(store, now_ts)
     store.put("KV", "poll", {"at": now_ts, "stations": len(readings), "new": len(new),
-                             "graded": graded, "expired": expired})
-    return {"stations": len(readings), "new": len(new), "graded": graded, "expired": expired}
+                             "graded": graded, "expired": expired, "forecast_expired": forecast_expired})
+    return {"stations": len(readings), "new": len(new), "graded": graded, "expired": expired,
+            "forecast_expired": forecast_expired}
 
 
 def migrate_v2(store: Store, now_ts: int) -> dict:
@@ -248,6 +252,9 @@ def build_card(store: Store, uid: int, now_ts: int) -> dict | None:
         card.update(state="fresh", value=v, answer=ans, band_en=en_band, band_hi=hi_band,
                     sentence_hi=hi_s, sentence_en=en_s, interval=None, can_hold=False,
                     **_answer_texts(ans))
+        fcst = forecast.for_card(store, uid, now_ts, ans, "fresh", os.environ.get("FORECAST_MODE", "off"))
+        if fcst:
+            card["forecast"] = fcst
         return card
     est = _estimate_for(store, meta, p, last, now_ts, get_cams(store))
     if est is None:
@@ -350,8 +357,11 @@ def scoreboard(store: Store, dates: list[str]) -> dict:
                            "miss_by": item.get("miss_by", 0), "pollutant": LABEL[item["pollutant"]]}
                 tally[item["status"]] = tally.get(item["status"], 0) + 1
         rows.append({"uid": uid, "name": meta["name"], "days": days})
-    return {"dates": dates, "rows": rows, "tally": tally,
-            "participation": store.get("KV", "bulletin"), "poll": store.get("KV", "poll")}
+    out = {"dates": dates, "rows": rows, "tally": tally,
+           "participation": store.get("KV", "bulletin"), "poll": store.get("KV", "poll")}
+    if os.environ.get("FORECAST_MODE", "off") == "on":
+        out["forecast_accuracy"] = forecast.accuracy(store)
+    return out
 
 
 def station_list(store: Store, now_ts: int) -> list[dict]:

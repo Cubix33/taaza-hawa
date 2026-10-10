@@ -49,6 +49,8 @@ def spoken_text(card: dict, lang: str) -> str:
     parts = [card.get("name", ""), SAY[lang][ans], ADVICE[lang][ans]]
     if ans == "WAIT":
         parts.append(WAIT_NEXT[lang]["fresh" if fresh else "old"])
+    if card.get("forecast"):
+        parts.append(card["forecast"]["sentence_hi" if lang == "hi" else "sentence_en"])
     age = card.get("age_min")
     iv = card.get("interval")
     if lang == "hi":

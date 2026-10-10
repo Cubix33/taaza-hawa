@@ -52,7 +52,7 @@ function whyList(c) {
 
 function waitPointer(c) {
   const stale = c.state !== "fresh";
-  const bits = [t("waitNext", stale)];
+  const bits = [c.forecast ? (hi() ? c.forecast.sentence_hi : c.forecast.sentence_en) : t("waitNext", stale)];
   if (stale && c.can_hold && c.interval && state.hold?.uid !== c.uid) bits.push(t("waitHold"));
   if (state.history?.points?.length) bits.push(t("waitTrend"));
   return bits.join(" ");
@@ -211,7 +211,7 @@ export function shareLink(c) {
   const iv = c.interval;
   const air = iv ? t("shareAirRange", bandName(iv.hi), iv.lo, iv.hi) : c.value != null ? t("shareAir", bandName(c.value), c.value) : "";
   const url = `${location.origin}${location.pathname}#/check?s=${c.uid}`;
-  const msg = t("shareMsg", t("say")[c.answer], c.name, air, ageText(c.age_min), url).replace(/<[^>]+>/g, "");
+  const msg = `${t("shareMsg", t("say")[c.answer], c.name, air, ageText(c.age_min), url)}${c.forecast ? `\n${hi() ? c.forecast.sentence_hi : c.forecast.sentence_en}` : ""}`.replace(/<[^>]+>/g, "");
   return `https://wa.me/?text=${encodeURIComponent(msg)}`;
 }
 
@@ -261,7 +261,7 @@ function spokenFallback(c) {
   if (!c) return "";
   const iv = c.interval;
   const bits = [c.name, t("say")[c.answer], t("advice")[c.answer]];
-  if (c.answer === "WAIT") bits.push(t("waitNext", c.state !== "fresh"));
+  if (c.answer === "WAIT") bits.push(c.forecast ? (hi() ? c.forecast.sentence_hi : c.forecast.sentence_en) : t("waitNext", c.state !== "fresh"));
   if (iv) bits.push(t("whyAirRange", bandName(iv.hi), iv.lo, iv.hi));
   else if (c.value != null) bits.push(t("whyAir", bandName(c.value), c.value));
   if (c.age_min != null) bits.push(c.state === "fresh" ? t("whyFresh", ageText(c.age_min)) : t("whyStale", ageText(c.age_min)));

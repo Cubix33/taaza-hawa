@@ -38,12 +38,14 @@ Parameters:
     Type: String
     Default: "0"
     Description: WAQI uid of the default station (Dwarka Sector 8).
+  ForecastMode:
+    Type: String
+    Default: shadow
+    AllowedValues: [off, shadow, on]
+    Description: shadow grades Chronos forecasts privately; on exposes them after the backtest gate.
 
 Globals:
   Function:
-    Runtime: python3.12
-    Architectures: [arm64]
-    CodeUri: ../backend/src/
     MemorySize: 256
     Timeout: 30
     Environment:
@@ -80,6 +82,9 @@ Resources:
   HoldRegisterFn:
     Type: AWS::Serverless::Function
     Properties:
+      Runtime: python3.12
+      Architectures: [arm64]
+      CodeUri: ../backend/src/
       Handler: handlers.hold_tasks.register
       Policies:
         - DynamoDBCrudPolicy: { TableName: !Ref Table }
@@ -89,6 +94,9 @@ Resources:
   HoldExpireFn:
     Type: AWS::Serverless::Function
     Properties:
+      Runtime: python3.12
+      Architectures: [arm64]
+      CodeUri: ../backend/src/
       Handler: handlers.hold_tasks.expire
       Policies:
         - DynamoDBCrudPolicy: { TableName: !Ref Table }
@@ -96,6 +104,9 @@ Resources:
   HoldNotifyFn:
     Type: AWS::Serverless::Function
     Properties:
+      Runtime: python3.12
+      Architectures: [arm64]
+      CodeUri: ../backend/src/
       Handler: handlers.hold_tasks.notify
       Environment:
         Variables:
@@ -108,6 +119,9 @@ Resources:
   PollerFn:
     Type: AWS::Serverless::Function
     Properties:
+      Runtime: python3.12
+      Architectures: [arm64]
+      CodeUri: ../backend/src/
       Handler: handlers.poller.handler
       Timeout: 120
       Environment:
@@ -145,6 +159,9 @@ Resources:
   ApiFn:
     Type: AWS::Serverless::Function
     Properties:
+      Runtime: python3.12
+      Architectures: [arm64]
+      CodeUri: ../backend/src/
       Handler: handlers.api.handler
       Environment:
         Variables:
@@ -157,6 +174,7 @@ Resources:
           JEV_MODEL: !Ref TypeSafeModel
           JEV_TIMEOUT_MS: "1500"
           SITE_URL: !Ref SiteUrl
+          FORECAST_MODE: !Ref ForecastMode
       FunctionUrlConfig:
         AuthType: NONE
         Cors:
@@ -176,6 +194,30 @@ Resources:
             - { Effect: Allow, Action: ses:SendEmail, Resource: "*" }
         - Statement:  # school search (Amazon Location Service, Places)
             - { Effect: Allow, Action: geo-places:SearchText, Resource: "*" }
+
+  ForecastFn:
+    Type: AWS::Serverless::Function
+    Metadata:
+      Dockerfile: Dockerfile.forecast
+      DockerContext: ../backend
+      DockerTag: chronos-bolt-tiny-a0e552d
+    Properties:
+      PackageType: Image
+      Architectures: [x86_64]
+      MemorySize: 2048
+      Timeout: 300
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref Table
+          FORECAST_MODE: !Ref ForecastMode
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref Table }
+      Events:
+        HourlyForecast:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(20 * * * ? *)
+            ScheduleExpressionTimezone: Asia/Kolkata
 
   PollFailAlarm:
     Type: AWS::CloudWatch::Alarm

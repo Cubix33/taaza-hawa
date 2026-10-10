@@ -1,0 +1,9 @@
+FROM public.ecr.aws/lambda/python:3.12
+
+ENV HF_HOME=/opt/chronos
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.7.1 \
+ && pip install --no-cache-dir chronos-forecasting==2.3.2 \
+ && python -c "from chronos import BaseChronosPipeline; BaseChronosPipeline.from_pretrained('amazon/chronos-bolt-tiny', revision='a0e552de83495b5c28c14c71c374f3e33280b340', cache_dir='/opt/chronos')"
+COPY src/ ${LAMBDA_TASK_ROOT}/
+ENV CHRONOS_MODEL_PATH=/opt/chronos/models--amazon--chronos-bolt-tiny/snapshots/a0e552de83495b5c28c14c71c374f3e33280b340
+CMD ["handlers.forecast.handler"]
