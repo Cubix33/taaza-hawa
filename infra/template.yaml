@@ -17,6 +17,14 @@ Parameters:
     Type: String
     Default: ""
     Description: e.g. in.anthropic.claude-haiku-4-5-20251001-v1:0 ; empty disables the Hindi rephrase.
+  TypeSafeApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: TypeSafe Jev key; empty disables free-text classification.
+  TypeSafeModel:
+    Type: String
+    Default: "jev-1.13.0"
   SiteUrl:
     Type: String
     Default: "https://main.d2r1frd99buxhf.amplifyapp.com"
@@ -145,6 +153,9 @@ Resources:
           DEFAULT_STATION_UID: !Ref DefaultStationUid
           BEDROCK_MODEL_ID: !Ref BedrockModelId
           BEDROCK_REGION: !Ref AWS::Region
+          JEV_API_KEY: !Ref TypeSafeApiKey
+          JEV_MODEL: !Ref TypeSafeModel
+          JEV_TIMEOUT_MS: "1500"
           SITE_URL: !Ref SiteUrl
       FunctionUrlConfig:
         AuthType: NONE

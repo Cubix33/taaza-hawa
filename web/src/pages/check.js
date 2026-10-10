@@ -1,7 +1,7 @@
 import { state, set, ls } from "../lib/store.js";
 import { t, hi } from "../lib/i18n.js";
 import { esc, ageText, isOld, icon, gauge, scale, bandName, bandColor, fireView } from "../lib/ui.js";
-import { run, loadCard, restoreHold, goStation, startHold, addEmail, toggleSpeak } from "../lib/actions.js";
+import { run, loadCard, restoreHold, goStation, startHold, addEmail, toggleSpeak, explainMismatch } from "../lib/actions.js";
 import { pickerView, bindPicker } from "../lib/picker.js";
 
 export function load() {
@@ -86,6 +86,7 @@ function card(c) {
   </section>
 
   ${activityView()}
+  ${mismatchView()}
   ${trendView(c)}
 
   <section class="facts ${iv ? "f4" : "f2"}">
@@ -106,6 +107,17 @@ function card(c) {
   ${c.participation ? `<p class="cpcb"><b>CPCB</b> ${esc(c.participation.line)}</p>` : ""}
   <a class="panel link-panel" href="#/about"><span>${icon.book}</span><b>${t("navAbout")}</b><span class="chev-r">${icon.arrow}</span></a>
   </div></div>`;
+}
+
+function mismatchView() {
+  const x = state.explanation;
+  return `<section class="panel mismatch"><button id="mismatch-toggle" class="btn ghost">${hi() ? "मेल नहीं खा रहा?" : "Doesn't match what you see?"}</button>
+    <div id="mismatch-panel" hidden><label for="mismatch-text">${hi() ? "जो दिख रहा है लिखें" : "Tell us what you see"}</label>
+    <textarea id="mismatch-text" maxlength="280" placeholder="IQAir says 300 / purifier mein 487"></textarea><span id="mismatch-count" class="muted small">0/280</span>
+    <p class="muted small">${hi() ? "लिखा हुआ टेक्स्ट समझने के लिए TypeSafe को भेजा जा सकता है; हम इसे सेव नहीं करते।" : "Text may be sent to TypeSafe to understand it; Taaza Hawa does not store it."}</p>
+    <div class="chips"><button data-explain-source="home_purifier" class="chip-btn">Purifier</button><button data-explain-source="iqair_app" class="chip-btn">IQAir</button><button data-explain-unit="ugm3" class="chip-btn">µg/m³</button><button data-explain-unit="us_aqi" class="chip-btn">US AQI</button><button data-explain-unit="india_aqi" class="chip-btn">India AQI</button><button data-explain-indoors="inside" class="chip-btn">${hi() ? "अंदर" : "Inside"}</button><button data-explain-indoors="outside" class="chip-btn">${hi() ? "बाहर" : "Outside"}</button></div>
+    <button id="explain-send" class="btn cta">${state.explainBusy ? "…" : (hi() ? "समझाएँ" : "Explain")}</button>
+    ${x ? `<div class="explain-result">${x.lines.map((line) => `<p>${esc(line)}</p>`).join("")}<p><b>${esc(x.station.name)}:</b> AQI ${x.station.value ?? "—"} · ${ageText(x.station.age_min)} ${t("ago")}</p><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(x.lines.join(" "))}">${t("share")}</a></div>` : ""}</div></section>`;
 }
 
 // every Delhi station with the age of its latest reading: the freshness audit at a glance
@@ -181,6 +193,16 @@ export function bind() {
   $("holdbtn")?.addEventListener("click", startHold);
   $("addemail")?.addEventListener("click", addEmail);
   $("newhold")?.addEventListener("click", () => { ls.set("hold", ""); set({ hold: null }); });
+  $("mismatch-toggle")?.addEventListener("click", () => { const panel = $("mismatch-panel"); panel.hidden = !panel.hidden; });
+  $("mismatch-text")?.addEventListener("input", (event) => { $("mismatch-count").textContent = `${event.target.value.length}/280`; });
+  const choices = {};
+  document.querySelectorAll("[data-explain-source], [data-explain-unit], [data-explain-indoors]").forEach((button) => button.addEventListener("click", () => {
+    if (button.dataset.explainSource) choices.source = button.dataset.explainSource;
+    if (button.dataset.explainUnit) choices.unit = button.dataset.explainUnit;
+    if (button.dataset.explainIndoors) choices.indoors = button.dataset.explainIndoors;
+    button.classList.add("on");
+  }));
+  $("explain-send")?.addEventListener("click", () => explainMismatch({ text: $("mismatch-text")?.value || "", ...choices }));
   document.querySelectorAll("main [data-uid]").forEach((b) => b.addEventListener("click", () => goStation(Number(b.dataset.uid))));
 }
 
