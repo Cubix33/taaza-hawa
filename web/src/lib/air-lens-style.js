@@ -26,8 +26,11 @@ export function styleMap(map, night) {
     }
   }
   if (map.getLayer('lens-buildings')) map.setPaintProperty('lens-buildings', 'fill-extrusion-color', c.building);
-  map.setLight({ anchor: 'viewport', color: night ? '#bce5de' : '#fff7de', intensity: night ? 0.5 : 0.35, position: [1.5, 200, 35] });
+  map.setLight(baseLight(night));
 }
+
+// The fixed Dusk/Day lighting. Live mode (air-lens-sky.js) replaces it with the real sun.
+export const baseLight = (night) => ({ anchor: 'viewport', color: night ? '#bce5de' : '#fff7de', intensity: night ? 0.5 : 0.35, position: [1.5, 200, 35] });
 
 export function addBuildings(map) {
   const source = Object.entries(map.getStyle().sources).find(([, s]) => s.type === 'vector')?.[0];

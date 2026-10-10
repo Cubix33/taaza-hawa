@@ -1,0 +1,29 @@
+/* Air Lens: "Cleaner air near you", fresh station readings ranked around the pin. */
+.lens-nearby { margin-top: 20px; display: grid; grid-template-columns: minmax(260px, 5fr) minmax(0, 7fr); gap: 16px 44px; padding: 24px 26px 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.lens-nearby.is-empty { align-items: center; padding-block: 18px; }
+.lens-nearby-title h2 { margin: 7px 0 0; font: 400 27px/1.15 var(--serif); letter-spacing: -.02em; }
+.lens-nearby-summary { margin: 14px 0 0; font-size: 15px; line-height: 1.5; color: var(--ink2); }
+.lens-nearby-summary b { color: var(--ink); font-weight: 600; }
+.lens-nearby-note, .lens-nearby-prompt { margin: 12px 0 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.lens-nearby-prompt { margin: 0; font-size: 14px; color: var(--ink2); }
+.lens-nearby-list { list-style: none; margin: 0; padding: 0; }
+.lens-nearby-row { width: 100%; min-height: 58px; display: grid; grid-template-columns: 20px 40px minmax(0, 1fr) auto; align-items: center; column-gap: 12px; text-align: left; color: inherit; background: transparent; border: 0; border-bottom: 1px solid var(--line); padding: 10px; border-radius: 6px 6px 0 0; }
+.lens-nearby-row.selected { background: color-mix(in srgb, var(--lens-accent) 6%, transparent); }
+@media (hover: hover) { .lens-nearby-row:hover { background: color-mix(in srgb, var(--lens-accent) 6%, transparent); } }
+.lens-nearby-rank { font: 500 10px var(--mono); color: var(--muted); }
+.lens-nearby-name { min-width: 0; }
+.lens-nearby-name b { display: block; font-size: 14px; font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.lens-nearby-name small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+.lens-nearby-tag { font: 500 11px var(--mono); color: var(--muted); white-space: nowrap; }
+.lens-nearby-tag.lower { color: var(--lens-accent); }
+.lens-nearby-tag.nearest { border: 1px solid var(--line); border-radius: 30px; padding: 2px 9px; color: var(--ink2); }
+.lens-nearby-foot { margin: 12px 0 0; font-size: 11px; line-height: 1.55; color: var(--muted); }
+html[lang="hi"] .lens-nearby-title h2 { font-family: var(--deva); }
+html[lang="hi"] .lens-nearby-tag { font-family: var(--sans); }
+@media (max-width: 760px) {
+  .lens-nearby, .lens-nearby.is-empty { grid-template-columns: 1fr; gap: 14px; padding: 20px 16px 18px; border-radius: 11px; }
+  .lens-nearby-title h2 { font-size: 25px; }
+  .lens-nearby-row { grid-template-columns: 18px 40px minmax(0, 1fr); row-gap: 3px; min-height: 64px; padding: 10px 8px; }
+  .lens-nearby-row .lens-list-value, .lens-nearby-rank { grid-row: span 2; }
+  .lens-nearby-tag { grid-column: 3; justify-self: start; white-space: normal; }
+}
