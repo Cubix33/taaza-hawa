@@ -38,3 +38,14 @@ test('every verdict can carry the healthy-adults, not-medical-advice line', () =
   assert.match(T.hi.healthyNote, /स्वस्थ वयस्क/);
   assert.match(T.hi.healthyNote, /डॉक्टरी सलाह नहीं/);
 });
+
+test('Air Lens is translated to एयर लेंस in Hindi nav and copy', () => {
+  assert.equal(T.hi.navStations, 'एयर लेंस');
+  assert.equal(T.en.navStations, 'Air Lens');
+  assert.equal(T.hi.mapCta, 'एयर लेंस खोलें');
+  assert.equal(T.hi.ft.lens[0], 'एयर लेंस 3D नक्शा');
+  for (const [k, v] of strings('hi')) {
+    assert.doesNotMatch(v, /Air Lens/, `hi.${k} should not leave "Air Lens" in English`);
+  }
+});
+

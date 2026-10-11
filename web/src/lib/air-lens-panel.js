@@ -9,7 +9,7 @@ export const pollutantName = (p) => p === 'pm25' ? 'PM₂.₅' : p === 'pm10' ? 
 export const statusName = (s) => s === 'fresh' ? words('Fresh reading', 'ताज़ा रीडिंग') : s === 'stale' ? words('Old reading', 'पुरानी रीडिंग') : words('No reading', 'रीडिंग नहीं');
 
 export function detailPanel(s, lens) {
-  if (!s) return `<div class="lens-panel-empty"><span class="lens-overline">AIR LENS</span><h2>${words('Finding Delhi’s stations…', 'दिल्ली के स्टेशन खोज रहे हैं…')}</h2></div>`;
+  if (!s) return `<div class="lens-panel-empty"><span class="lens-overline">${words('AIR LENS', 'एयर लेंस')}</span><h2>${words('Finding Delhi’s stations…', 'दिल्ली के स्टेशन खोज रहे हैं…')}</h2></div>`;
   const c = lens.card, iv = c?.interval, loading = lens.loading;
   const neighbours = c?.evidence?.neighbours || [];
   const observed = c?.state === 'fresh';
