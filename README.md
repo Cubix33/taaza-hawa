@@ -78,6 +78,7 @@ Also: *"What will you do outside?"* chips (walk, jog, run, child playing) that e
 - **$0.00 Inactive Compute Cost:** Step Functions `waitForTaskToken` holds state machines asleep for up to 72h during silent outages with zero idle Lambda billing.
 - **Measured AWS Run-Rate:** ₹2.10/day ($0.025/day) from AWS Cost Explorer, safely inside the AWS Free Tier.
 - **Instant Rehearsal Endpoint:** `POST /dev/return?uid=1` delivers a live `SendTaskSuccess` callback in <80ms for deterministic live judging.
+- **Typesafe AI JEV(latest, 2026)** with tis API key is also used
 
 ### Results at a Glance: Stale-Reading Backtest
 
