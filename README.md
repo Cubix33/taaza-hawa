@@ -309,11 +309,11 @@ Built during the hack window (8–11 Oct 2026). Open work is tracked as [issues]
 - [x] Live WAQI scale check (K3): WAQI publishes US-EPA AQI from 1-hour readings, so `parse_feed` converts it back to CPCB sub-indices; it also reads the real UTC time (`time.v` is local wall clock)
 - [x] Chronos forecast job deployed in shadow mode (hourly schedule, graded against later readings)
 - [ ] Enough station history (72 h) to produce the first forecasts, then an offline backtest against "same as now" before `ForecastMode=on`
-- [ ] The real Dwarka default station
-- [ ] CPCB bulletin parser checked on a real PDF
-- [ ] End-to-end "Hold me to this" loop recorded on AWS
+- [x] The real Dwarka default station
+- [x] CPCB bulletin parser checked on a real PDF
+- [x] End-to-end "Hold me to this" loop recorded on AWS
 - [x] Demo film ([YouTube](https://www.youtube.com/watch?v=OW2FaWJGFAA))
-- [ ] AWS Builder Center blog
+- [x] [AWS Builder Center blog](https://builder.aws.com/content/3JUMvwGOd6xSXZP8H7s6sZiFFTK/the-number-has-an-age)
 
 ## Research behind it
 
@@ -322,3 +322,7 @@ The idea was chosen through written research and a multi-perspective review befo
 [Full spec](docs/wayfinder/IDEA-taaza-hawa.md) · [Council verdict](docs/wayfinder/council/03-verdict.md) · [Research R1–R8](docs/wayfinder/research/) · [Decision map](docs/wayfinder/MAP.md)
 
 **Data:** WAQI (aqicn.org), a mirror of CPCB/DPCC station readings · Open-Meteo CAMS and wind · NASA FIRMS active-fire detections (VIIRS) · school search by Amazon Location Service (OpenStreetMap/Photon in local dev) · CPCB daily AQI bulletin · breathing rates from the US EPA Exposure Factors Handbook · map tiles by OpenFreeMap, data © OpenStreetMap contributors. Values are station air, not your street.
+
+---
+
+See the project discussed on AWS Builder Center: [The Number Has an Age](https://builder.aws.com/content/3JUMvwGOd6xSXZP8H7s6sZiFFTK/the-number-has-an-age)
