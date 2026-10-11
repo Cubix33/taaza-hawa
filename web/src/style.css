@@ -746,3 +746,19 @@ html[lang="hi"] .page-title em, html[lang="hi"] .sec-title em { font-style: norm
   .page-head > div:first-child:has(> .page-lead) { display: block; }
   .page-head > div:first-child > .page-lead { margin-top: 14px; padding-left: 0; border-left: 0; }
 }
+
+/* story: the math moment (step 3), the guarantee badge, and the ghost forecast (step 7) */
+.st-math { position: absolute; inset: 0; overflow: hidden; pointer-events: none; visibility: hidden; }
+.st-math span { position: absolute; left: 0; top: 0; white-space: nowrap; font: italic 600 1rem/1 "Cambria Math", "STIX Two Math", Georgia, serif; color: var(--brand); opacity: 0; will-change: transform, opacity; text-shadow: 0 0 18px color-mix(in srgb, var(--brand) 45%, transparent); }
+.st-lab.badge { color: var(--brand-ink); background: var(--brand); border-color: var(--brand); font-weight: 700; font-size: .8rem; box-shadow: 0 8px 22px -8px color-mix(in srgb, var(--brand) 70%, transparent); }
+.st-lab.clear { color: var(--go); background: var(--go-bg); border-color: color-mix(in srgb, var(--go) 40%, var(--line)); font-weight: 600; }
+.st-lab.soon { color: var(--brand); background: var(--sky-soft); border-style: dashed; border-color: color-mix(in srgb, var(--brand) 45%, var(--line)); }
+.st-lab.tick { background: transparent; border-color: transparent; box-shadow: none; color: var(--muted); padding: 0 4px; }
+
+/* "built with" chips under the story */
+.ai-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 22px 0 0; padding: 0; list-style: none; }
+.ai-chips .ai-lead { font: 500 .78rem var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-right: 4px; }
+html[lang="hi"] .ai-chips .ai-lead { letter-spacing: 0; text-transform: none; font-size: .85rem; }
+.ai-chip { display: inline-flex; align-items: baseline; gap: 8px; padding: 7px 14px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line); font-size: .88rem; }
+.ai-chip b { font-weight: 600; color: var(--ink); } .ai-chip span { color: var(--muted); font-size: .8rem; }
+.ai-chip.soon { border-style: dashed; }
