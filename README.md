@@ -22,6 +22,14 @@ WeMakeDevs × AWS **Environmental Hacks 2026**
 
 <sub>The sky, the haze and the sun are an illustrative artwork parameterized by Delhi's live AQI: clear air looks clear, smog looks like smog.</sub>
 
+<br/>
+
+### 🎬 Demo video
+
+[![Watch the Taaza Hawa demo on YouTube](https://img.youtube.com/vi/OW2FaWJGFAA/maxresdefault.jpg)](https://www.youtube.com/watch?v=OW2FaWJGFAA)
+
+<sub><a href="https://www.youtube.com/watch?v=OW2FaWJGFAA">Watch on YouTube</a></sub>
+
 </div>
 
 ---
@@ -304,7 +312,8 @@ Built during the hack window (8–11 Oct 2026). Open work is tracked as [issues]
 - [ ] The real Dwarka default station
 - [ ] CPCB bulletin parser checked on a real PDF
 - [ ] End-to-end "Hold me to this" loop recorded on AWS
-- [ ] Demo film and AWS Builder Center blog
+- [x] Demo film ([YouTube](https://www.youtube.com/watch?v=OW2FaWJGFAA))
+- [ ] AWS Builder Center blog
 
 ## Research behind it
 
