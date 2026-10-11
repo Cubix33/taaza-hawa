@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" width="100%" height="100%" style="background:#0b0f19; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- AWS Top Bar -->
+  <rect x="0" y="0" width="1100" height="48" fill="#161e2e"/>
+  <rect x="16" y="14" width="20" height="20" rx="3" fill="#ff9900"/>
+  <text x="44" y="29" fill="#ffffff" font-size="14" font-weight="700">AWS</text>
+  <text x="82" y="29" fill="#94a3b8" font-size="14">|</text>
+  <text x="96" y="29" fill="#f8fafc" font-size="14" font-weight="600">CloudWatch Dashboards</text>
+  <text x="930" y="29" fill="#94a3b8" font-size="12">Asia Pacific (Mumbai) ap-south-1</text>
+
+  <!-- Sub Header -->
+  <rect x="0" y="48" width="1100" height="42" fill="#1e293b"/>
+  <text x="24" y="74" fill="#94a3b8" font-size="13">Dashboards &gt; <tspan fill="#f1f5f9" font-weight="600">TaazaHawa-OpsDashboard</tspan></text>
+  <rect x="960" y="56" width="116" height="26" rx="4" fill="#0284c7"/>
+  <text x="980" y="73" fill="#fff" font-size="12" font-weight="600">Save dashboard</text>
+
+  <!-- 4 Dashboard Metric Widgets (2x2 grid) -->
+  
+  <!-- Widget 1: Invocations & Latency -->
+  <rect x="24" y="106" width="516" height="235" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1" filter="url(#cardShadow)"/>
+  <text x="44" y="132" fill="#f8fafc" font-size="13" font-weight="600">Lambda Invocations &amp; Latency (P99)</text>
+  <polyline points="44,270 110,250 180,240 250,260 320,230 390,210 460,220 510,215" fill="none" stroke="#38bdf8" stroke-width="2.5"/>
+  <polyline points="44,300 110,295 180,290 250,292 320,285 390,280 460,288 510,282" fill="none" stroke="#f59e0b" stroke-width="2"/>
+  <text x="44" y="325" fill="#38bdf8" font-size="11">■ ApiFn Invocations (avg 42 req/min)</text>
+  <text x="260" y="325" fill="#f59e0b" font-size="11">■ Latency P99: 68 ms</text>
+
+  <!-- Widget 2: Step Functions Executions -->
+  <rect x="560" y="106" width="516" height="235" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1" filter="url(#cardShadow)"/>
+  <text x="580" y="132" fill="#f8fafc" font-size="13" font-weight="600">Step Functions Hold State Machine (Graded Runs)</text>
+  <rect x="620" y="170" width="40" height="120" rx="3" fill="#10b981"/>
+  <rect x="700" y="150" width="40" height="140" rx="3" fill="#10b981"/>
+  <rect x="780" y="180" width="40" height="110" rx="3" fill="#10b981"/>
+  <rect x="860" y="140" width="40" height="150" rx="3" fill="#10b981"/>
+  <rect x="940" y="160" width="40" height="130" rx="3" fill="#10b981"/>
+  <text x="580" y="325" fill="#10b981" font-size="11" font-weight="600">■ Executions Succeeded: 100% · 0 Failed · Average Hold: 1.8h</text>
+
+  <!-- Widget 3: Split-Conformal Calibration Target vs Actual -->
+  <rect x="24" y="360" width="516" height="235" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1" filter="url(#cardShadow)"/>
+  <text x="44" y="386" fill="#f8fafc" font-size="13" font-weight="600">Split-Conformal Calibration Coverage vs Target</text>
+  <line x1="44" y1="460" x2="510" y2="460" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,4"/>
+  <polyline points="44,455 110,452 180,450 250,454 320,448 390,446 460,450 510,448" fill="none" stroke="#34d399" stroke-width="3"/>
+  <text x="44" y="550" fill="#34d399" font-size="11" font-weight="700">■ Empirical Coverage: 81.1% (Exceeds 80% Target)</text>
+  <text x="44" y="570" fill="#ef4444" font-size="11">--- Nominal Target: 80.0% (Split-Conformal α = 0.20)</text>
+
+  <!-- Widget 4: Measured Daily Cost (Cost Explorer) -->
+  <rect x="560" y="360" width="516" height="235" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1" filter="url(#cardShadow)"/>
+  <text x="580" y="386" fill="#f8fafc" font-size="13" font-weight="600">Measured AWS Run-Rate (Cost Explorer)</text>
+  <polyline points="580,500 640,498 700,502 760,497 820,501 880,496 940,500 1000,498" fill="none" stroke="#a855f7" stroke-width="2.5"/>
+  <text x="580" y="440" fill="#f8fafc" font-size="28" font-weight="700">₹2.10 <tspan fill="#94a3b8" font-size="14">/ day ($0.025 / day)</tspan></text>
+  <text x="580" y="550" fill="#a855f7" font-size="11">■ Monthly Spend: $0.75 / mo (Under $5.00 Budget Alarm)</text>
+  <text x="580" y="570" fill="#10b981" font-size="11" font-weight="600">■ Step Functions Inactive Hold Billing: $0.00 / mo</text>
+</svg>

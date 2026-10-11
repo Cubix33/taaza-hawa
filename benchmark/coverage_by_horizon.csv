@@ -1,0 +1,7 @@
+Horizon (Hours),Evaluations,Conformal Coverage (%),Target Coverage (%),Median Range Width (AQI),Conformal MAE,Persistence MAE,MAE Error Reduction (%)
+1h,9324,80.3%,80.0%,42.3,12.8,14.4,11.1%
+2h,9324,80.3%,80.0%,42.3,12.8,18.1,29.3%
+3h,9324,80.3%,80.0%,42.3,12.8,22.9,44.1%
+4h,9324,80.3%,80.0%,42.3,12.8,28.2,54.6%
+5h,9324,80.3%,80.0%,42.3,12.8,33.3,61.6%
+6h,9324,80.3%,80.0%,42.3,12.8,37.9,66.2%

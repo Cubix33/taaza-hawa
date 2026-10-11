@@ -1,0 +1,186 @@
+{
+  "dataset": "OpenAQ AWS Open Data Archive (s3://openaq-data-archive) + CPCB Delhi Stations",
+  "period": "Oct 15 - Nov 15 2025 (720 hourly timesteps)",
+  "stations_evaluated": 14,
+  "total_evaluations": 55944,
+  "horizons": {
+    "1": {
+      "horizon_hours": 1,
+      "evaluations": 9324,
+      "conformal_coverage_pct": 80.3,
+      "target_coverage_pct": 80.0,
+      "median_range_width": 42.3,
+      "conformal_mae": 12.8,
+      "conformal_rmse": 15.9,
+      "persistence_mae": 14.4,
+      "persistence_rmse": 18.0,
+      "persistence_coverage_pct": 81.2,
+      "mae_reduction_pct": 11.1
+    },
+    "2": {
+      "horizon_hours": 2,
+      "evaluations": 9324,
+      "conformal_coverage_pct": 80.3,
+      "target_coverage_pct": 80.0,
+      "median_range_width": 42.3,
+      "conformal_mae": 12.8,
+      "conformal_rmse": 15.9,
+      "persistence_mae": 18.1,
+      "persistence_rmse": 22.6,
+      "persistence_coverage_pct": 71.5,
+      "mae_reduction_pct": 29.3
+    },
+    "3": {
+      "horizon_hours": 3,
+      "evaluations": 9324,
+      "conformal_coverage_pct": 80.3,
+      "target_coverage_pct": 80.0,
+      "median_range_width": 42.3,
+      "conformal_mae": 12.8,
+      "conformal_rmse": 15.9,
+      "persistence_mae": 22.9,
+      "persistence_rmse": 28.1,
+      "persistence_coverage_pct": 58.6,
+      "mae_reduction_pct": 44.1
+    },
+    "4": {
+      "horizon_hours": 4,
+      "evaluations": 9324,
+      "conformal_coverage_pct": 80.3,
+      "target_coverage_pct": 80.0,
+      "median_range_width": 42.3,
+      "conformal_mae": 12.8,
+      "conformal_rmse": 15.9,
+      "persistence_mae": 28.2,
+      "persistence_rmse": 34.0,
+      "persistence_coverage_pct": 47.2,
+      "mae_reduction_pct": 54.6
+    },
+    "5": {
+      "horizon_hours": 5,
+      "evaluations": 9324,
+      "conformal_coverage_pct": 80.3,
+      "target_coverage_pct": 80.0,
+      "median_range_width": 42.3,
+      "conformal_mae": 12.8,
+      "conformal_rmse": 15.9,
+      "persistence_mae": 33.3,
+      "persistence_rmse": 40.0,
+      "persistence_coverage_pct": 38.3,
+      "mae_reduction_pct": 61.6
+    },
+    "6": {
+      "horizon_hours": 6,
+      "evaluations": 9324,
+      "conformal_coverage_pct": 80.3,
+      "target_coverage_pct": 80.0,
+      "median_range_width": 42.3,
+      "conformal_mae": 12.8,
+      "conformal_rmse": 15.9,
+      "persistence_mae": 37.9,
+      "persistence_rmse": 45.5,
+      "persistence_coverage_pct": 32.7,
+      "mae_reduction_pct": 66.2
+    }
+  },
+  "stations": {
+    "1": {
+      "name": "Dwarka Sector 8",
+      "evaluations": 666,
+      "coverage_pct": 52.7,
+      "conformal_mae": 20.5,
+      "persistence_mae": 23.0
+    },
+    "2": {
+      "name": "Anand Vihar",
+      "evaluations": 666,
+      "coverage_pct": 52.4,
+      "conformal_mae": 20.7,
+      "persistence_mae": 22.0
+    },
+    "3": {
+      "name": "Mundka",
+      "evaluations": 666,
+      "coverage_pct": 76.3,
+      "conformal_mae": 14.4,
+      "persistence_mae": 23.0
+    },
+    "4": {
+      "name": "Rohini",
+      "evaluations": 666,
+      "coverage_pct": 93.2,
+      "conformal_mae": 9.0,
+      "persistence_mae": 23.2
+    },
+    "5": {
+      "name": "R K Puram",
+      "evaluations": 666,
+      "coverage_pct": 92.9,
+      "conformal_mae": 9.2,
+      "persistence_mae": 23.3
+    },
+    "6": {
+      "name": "Okhla Phase-2",
+      "evaluations": 666,
+      "coverage_pct": 95.3,
+      "conformal_mae": 8.5,
+      "persistence_mae": 23.0
+    },
+    "7": {
+      "name": "Punjabi Bagh",
+      "evaluations": 666,
+      "coverage_pct": 89.5,
+      "conformal_mae": 10.2,
+      "persistence_mae": 22.7
+    },
+    "8": {
+      "name": "Wazirpur",
+      "evaluations": 666,
+      "coverage_pct": 94.1,
+      "conformal_mae": 8.4,
+      "persistence_mae": 23.3
+    },
+    "9": {
+      "name": "ITO",
+      "evaluations": 666,
+      "coverage_pct": 91.7,
+      "conformal_mae": 9.7,
+      "persistence_mae": 22.7
+    },
+    "10": {
+      "name": "Jahangirpuri",
+      "evaluations": 666,
+      "coverage_pct": 91.3,
+      "conformal_mae": 9.7,
+      "persistence_mae": 23.1
+    },
+    "11": {
+      "name": "Bawana",
+      "evaluations": 666,
+      "coverage_pct": 93.2,
+      "conformal_mae": 8.8,
+      "persistence_mae": 22.8
+    },
+    "12": {
+      "name": "Pusa",
+      "evaluations": 666,
+      "coverage_pct": 53.0,
+      "conformal_mae": 20.6,
+      "persistence_mae": 23.0
+    },
+    "13": {
+      "name": "Najafgarh",
+      "evaluations": 666,
+      "coverage_pct": 64.6,
+      "conformal_mae": 17.8,
+      "persistence_mae": 22.9
+    },
+    "14": {
+      "name": "Vivek Vihar",
+      "evaluations": 666,
+      "coverage_pct": 83.2,
+      "conformal_mae": 12.5,
+      "persistence_mae": 22.9
+    }
+  }
+}

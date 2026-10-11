@@ -252,7 +252,7 @@ def build_card(store: Store, uid: int, now_ts: int) -> dict | None:
         card.update(state="fresh", value=v, answer=ans, band_en=en_band, band_hi=hi_band,
                     sentence_hi=hi_s, sentence_en=en_s, interval=None, can_hold=False,
                     **_answer_texts(ans))
-        fcst = forecast.for_card(store, uid, now_ts, ans, "fresh", os.environ.get("FORECAST_MODE", "off"))
+        fcst = forecast.for_card(store, uid, now_ts, ans, "fresh", os.environ.get("FORECAST_MODE", "on"))
         if fcst:
             card["forecast"] = fcst
         return card

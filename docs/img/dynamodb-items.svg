@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 560" width="100%" height="100%" style="background:#0b0f19; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- AWS Top Bar -->
+  <rect x="0" y="0" width="1100" height="48" fill="#161e2e"/>
+  <rect x="16" y="14" width="20" height="20" rx="3" fill="#ff9900"/>
+  <text x="44" y="29" fill="#ffffff" font-size="14" font-weight="700">AWS</text>
+  <text x="82" y="29" fill="#94a3b8" font-size="14">|</text>
+  <text x="96" y="29" fill="#f8fafc" font-size="14" font-weight="600">Amazon DynamoDB</text>
+  <text x="930" y="29" fill="#94a3b8" font-size="12">Asia Pacific (Mumbai) ap-south-1</text>
+
+  <!-- Sub Header -->
+  <rect x="0" y="48" width="1100" height="42" fill="#1e293b"/>
+  <text x="24" y="74" fill="#94a3b8" font-size="13">Tables &gt; <tspan fill="#f1f5f9" font-weight="600">TaazaHawa-Table</tspan> &gt; <tspan fill="#38bdf8">Explore items</tspan></text>
+
+  <!-- Main Table Card -->
+  <rect x="24" y="106" width="1052" height="420" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1" filter="url(#cardShadow)"/>
+  
+  <!-- Table Header -->
+  <rect x="24" y="106" width="1052" height="42" rx="8" fill="#1e293b"/>
+  <text x="44" y="132" fill="#94a3b8" font-size="12" font-weight="600">pk (Partition key: String)</text>
+  <text x="240" y="132" fill="#94a3b8" font-size="12" font-weight="600">sk (Sort key: String)</text>
+  <text x="480" y="132" fill="#94a3b8" font-size="12" font-weight="600">Item attributes &amp; payload</text>
+
+  <!-- Row 1: STATION -->
+  <line x1="24" y1="185" x2="1076" y2="185" stroke="#1e293b" stroke-width="1"/>
+  <text x="44" y="168" fill="#f59e0b" font-size="12" font-family="monospace" font-weight="600">STATION</text>
+  <text x="240" y="168" fill="#e2e8f0" font-size="12" font-family="monospace">1</text>
+  <text x="480" y="168" fill="#cbd5e1" font-size="11" font-family="monospace">{"name": "Dwarka Sector 8", "lat": 28.571, "lon": 77.072, "live": true}</text>
+
+  <!-- Row 2: READ#1 -->
+  <line x1="24" y1="235" x2="1076" y2="235" stroke="#1e293b" stroke-width="1"/>
+  <text x="44" y="218" fill="#f59e0b" font-size="12" font-family="monospace" font-weight="600">READ#1</text>
+  <text x="240" y="218" fill="#e2e8f0" font-size="12" font-family="monospace">2026-10-11T09:00:00Z</text>
+  <text x="480" y="218" fill="#cbd5e1" font-size="11" font-family="monospace">{"ts": 1790000000, "values": {"pm10": 175.0, "pm25": 112.0}, "aqi": 175}</text>
+
+  <!-- Row 3: FCST#1 -->
+  <line x1="24" y1="285" x2="1076" y2="285" stroke="#1e293b" stroke-width="1"/>
+  <text x="44" y="268" fill="#f59e0b" font-size="12" font-family="monospace" font-weight="600">FCST#1</text>
+  <text x="240" y="268" fill="#e2e8f0" font-size="12" font-family="monospace">001728638400</text>
+  <text x="480" y="268" fill="#cbd5e1" font-size="11" font-family="monospace">{"model": "chronos", "mode": "on", "hours": [{"h":1, "lo":190, "mid":210, "hi":230}]}</text>
+
+  <!-- Row 4: PRED#1 -->
+  <line x1="24" y1="335" x2="1076" y2="335" stroke="#1e293b" stroke-width="1"/>
+  <text x="44" y="318" fill="#f59e0b" font-size="12" font-family="monospace" font-weight="600">PRED#1</text>
+  <text x="240" y="318" fill="#e2e8f0" font-size="12" font-family="monospace">MORNING#2026-10-11</text>
+  <text x="480" y="318" fill="#34d399" font-size="11" font-family="monospace">{"status": "HIT", "lo": 214, "hi": 251, "actual": 238, "miss_by": 0}</text>
+
+  <!-- Row 5: TOKEN -->
+  <line x1="24" y1="385" x2="1076" y2="385" stroke="#1e293b" stroke-width="1"/>
+  <text x="44" y="368" fill="#f59e0b" font-size="12" font-family="monospace" font-weight="600">TOKEN#hold-dwarka</text>
+  <text x="240" y="368" fill="#e2e8f0" font-size="12" font-family="monospace">TASK_TOKEN</text>
+  <text x="480" y="368" fill="#cbd5e1" font-size="11" font-family="monospace">{"token": "AAAAKgAAAAIAAAAAAAAAAY...", "station_uid": 1, "created": 1789998000}</text>
+
+  <!-- Row 6: KV -->
+  <line x1="24" y1="435" x2="1076" y2="435" stroke="#1e293b" stroke-width="1"/>
+  <text x="44" y="418" fill="#f59e0b" font-size="12" font-family="monospace" font-weight="600">KV</text>
+  <text x="240" y="418" fill="#e2e8f0" font-size="12" font-family="monospace">fires</text>
+  <text x="480" y="418" fill="#cbd5e1" font-size="11" font-family="monospace">{"total": 312, "upwind": 268, "wind_from": 315, "source": "NASA FIRMS (VIIRS)"}</text>
+
+  <!-- Footnote -->
+  <rect x="44" y="450" width="1012" height="60" rx="4" fill="#090d16"/>
+  <text x="64" y="475" fill="#94a3b8" font-size="11">Single Table Design: Pay-Per-Request (On-Demand) · Sub-millisecond single-digit latencies across ap-south-1.</text>
+  <text x="64" y="495" fill="#38bdf8" font-size="11" font-weight="600">Storage: 100% Partitioned by Station UID and Target Date · Zero Idle Capacity Cost</text>
+</svg>

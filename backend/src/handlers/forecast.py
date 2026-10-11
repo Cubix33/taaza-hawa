@@ -21,5 +21,5 @@ def _predict(series: list[float], horizon: int) -> list[tuple[float, float, floa
 
 
 def handler(_event, _ctx):
-    mode = os.environ.get("FORECAST_MODE", "shadow")
+    mode = os.environ.get("FORECAST_MODE", "on")
     return {"created": forecast.run(store(), now(), _predict, mode=mode), "mode": mode}

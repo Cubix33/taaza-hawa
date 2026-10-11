@@ -40,7 +40,7 @@ Parameters:
     Description: WAQI uid of the default station (Dwarka Sector 8).
   ForecastMode:
     Type: String
-    Default: shadow
+    Default: on
     AllowedValues: [off, shadow, on]
     Description: shadow grades Chronos forecasts privately; on exposes them after the backtest gate.
 
@@ -48,6 +48,7 @@ Globals:
   Function:
     MemorySize: 256
     Timeout: 30
+    Tracing: Active
     Environment:
       Variables:
         TABLE_NAME: !Ref Table
@@ -232,9 +233,97 @@ Resources:
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-ops-alerts"
+      DisplayName: Taaza Hawa Operations Alert Notification
+
+  OpsDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub "${AWS::StackName}-OpsDashboard"
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0, "y": 0, "width": 12, "height": 6,
+              "properties": {
+                "title": "Lambda Invocations and Latency",
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${ApiFn}", { "stat": "Sum" }],
+                  [".", "Invocations", "FunctionName", "${PollerFn}", { "stat": "Sum" }],
+                  [".", "Duration", "FunctionName", "${ApiFn}", { "stat": "p99", "yAxis": "right" }]
+                ],
+                "period": 300,
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 0, "width": 12, "height": 6,
+              "properties": {
+                "title": "Step Functions Hold State Machine Executions",
+                "metrics": [
+                  ["AWS/States", "ExecutionsStarted", "StateMachineArn", "${HoldStateMachine}", { "stat": "Sum" }],
+                  [".", "ExecutionsSucceeded", "StateMachineArn", "${HoldStateMachine}", { "stat": "Sum" }],
+                  [".", "ExecutionTime", "StateMachineArn", "${HoldStateMachine}", { "stat": "Average", "yAxis": "right" }]
+                ],
+                "period": 300,
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 6, "width": 12, "height": 6,
+              "properties": {
+                "title": "DynamoDB Storage and Consumed Capacity",
+                "metrics": [
+                  ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", "${Table}", { "stat": "Sum" }],
+                  [".", "ConsumedWriteCapacityUnits", "TableName", "${Table}", { "stat": "Sum" }]
+                ],
+                "period": 300,
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 6, "width": 12, "height": 6,
+              "properties": {
+                "title": "Lambda Errors and Failures",
+                "metrics": [
+                  ["AWS/Lambda", "Errors", "FunctionName", "${PollerFn}", { "stat": "Sum" }],
+                  [".", "Errors", "FunctionName", "${ApiFn}", { "stat": "Sum" }],
+                  [".", "Errors", "FunctionName", "${ForecastFn}", { "stat": "Sum" }]
+                ],
+                "period": 300,
+                "region": "${AWS::Region}"
+              }
+            }
+          ]
+        }
+
+  MonthlyBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: !Sub "${AWS::StackName}-MonthlyBudget"
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: 5.0
+          Unit: USD
 
 Outputs:
   ApiUrl:
     Value: !GetAtt ApiFnUrl.FunctionUrl
   StateMachineArn:
     Value: !Ref HoldStateMachine
+  AlertTopicArn:
+    Value: !Ref AlertTopic
+  DashboardName:
+    Value: !Ref OpsDashboard
