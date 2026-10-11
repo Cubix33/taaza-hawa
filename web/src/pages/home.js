@@ -69,7 +69,7 @@ export function view() {
   <section class="wrap sec st-sec">
     <div class="sec-head"><h2 class="sec-title">${accent(t("stTitle"))}</h2><p class="muted small">${t("stNote")}</p></div>
     <div id="story-slot" class="st-slot"></div>
-    <ul class="ai-chips"><li class="ai-lead">${t("builtWith")}</li>${[["chipChronos", " soon"], ["chipPolly", ""], ["chipSfn", ""]].map(([k, c]) => `<li class="ai-chip${c}"><b>${t(k)[0]}</b><span>${t(k)[1]}</span></li>`).join("")}</ul>
+    <ul class="ai-chips"><li class="ai-lead">${t("builtWith")}</li>${[["chipChronos", ""], ["chipPolly", ""], ["chipSfn", ""]].map(([k, c]) => `<li class="ai-chip${c}"><b>${t(k)[0]}</b><span>${t(k)[1]}</span></li>`).join("")}</ul>
   </section>
 
   <section class="band"><div class="wrap sec">
