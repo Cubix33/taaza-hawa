@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "test": "node --test tests/*.test.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lighthouse": "lhci autorun --config=../lighthouserc.json"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.15.1",
     "vite": "^6.0.0"
   },
   "dependencies": {
