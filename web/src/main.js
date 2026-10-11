@@ -22,7 +22,7 @@ const NAV = [
   ["record", "navRecord", icon.record],
   ["about", "navAbout", icon.book],
 ];
-// the phone tab bar keeps five; "How it works" stays in the top bar, the footer and on Check my air
+// the phone tab bar keeps five; "Why trust us" stays in the top bar, the footer and on Check my air
 const TABS = NAV.filter(([r]) => r !== "about");
 
 function parseHash() {
