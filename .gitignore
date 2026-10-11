@@ -15,3 +15,6 @@ suggestions.md
 .airlens-compare/
 playwright-artifacts/
 .lighthouseci/
+claude-ranking/
+agy-ranking/
+docs/submission-answers*
