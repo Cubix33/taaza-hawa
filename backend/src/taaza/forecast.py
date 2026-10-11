@@ -52,7 +52,7 @@ def _series(store, uid: int, pollutant: str, now_ts: int) -> list[float] | None:
 
 def run(store, now_ts: int, predict: Predict, mode: str = "shadow") -> int:
     """Forecast every eligible fresh station.  `off` performs no write."""
-    if mode == "off":
+    if str(mode).lower() in {"off", "false"}:
         return 0
     created = 0
     for meta in store.query("STATION"):
@@ -116,7 +116,7 @@ def expire(store, now_ts: int) -> int:
 
 
 def for_card(store, uid: int, now_ts: int, answer: str, state: str, mode: str) -> dict | None:
-    if mode != "on" or state != "fresh" or answer not in {"WAIT", "STAY"}:
+    if str(mode).lower() not in {"on", "true"} or state != "fresh" or answer not in {"WAIT", "STAY"}:
         return None
     runs = store.query(f"FCST#{uid}", limit=1, reverse=True)
     if not runs or now_ts - runs[0]["created_ts"] > 90 * 60:
