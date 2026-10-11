@@ -1,17 +1,17 @@
 # Blog: winning "Top 5 Blogs" at Environmental Hacks
 
-This folder holds the research and the draft for the Taaza Hawa post on AWS Builder Center.
+This folder holds the historical research and the [final Taaza Hawa post](taaza-hawa-builder-center.md) for AWS Builder Center. The earlier draft analysis below predates the clock and scale fixes; use [PUBLISHING.md](PUBLISHING.md) for current upload steps.
 The prize is AirPods for 5 people, and the brief is the same as First Commit's, word for word:
 
 > *Write up what you built: the problem, the stack, what fought back. Publish it on AWS Builder Center and link it in your submission.*
 
 | File | What it is |
 |---|---|
-| [taaza-hawa-builder-center.md](taaza-hawa-builder-center.md) | **The post.** Ready to paste into Builder Center once the blockers are cleared |
-| [PUBLISHING.md](PUBLISHING.md) | **Read this first.** Four blockers, the placeholders, image upload order, Builder Center steps and the final checks |
+| [taaza-hawa-builder-center.md](taaza-hawa-builder-center.md) | **The final post.** Ready for a last personal read and Builder Center paste |
+| [PUBLISHING.md](PUBLISHING.md) | Current image upload order, Builder Center fields, and dated fact notes |
 | [analysis/01-winners-teardown.md](analysis/01-winners-teardown.md) | The five First Commit blog winners, section by section, plus their projects |
 | [analysis/02-haqcheck-postmortem.md](analysis/02-haqcheck-postmortem.md) | Why "Cedar Decides. The LLM Just Talks." didn't place |
-| [images/](images/) | Cover and 4 figures (PNG, 1760 px), their HTML sources, `render.py`, `capture_live.py`, and one real pre-fix capture |
+| [images/](images/) | Cover, historical figures, a live 11 October capture, HTML sources, and render scripts |
 
 **Method.** On 9 Oct 2026, Playwright (Python, headless Chromium) scraped <https://www.wemakedevs.org/aws/first-commit/projects/blogs>. For each of the 5 blogs it rendered the Builder Center page, scrolled it, saved the text and image list, and measured it.
 It also fetched each winner's GitHub README, the First Commit and Environmental Hacks rules and prize pages, the published HaqCheck article, WAQI's docs and demo feed, and the live Taaza Hawa API.

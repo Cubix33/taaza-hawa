@@ -26,11 +26,37 @@ from taaza.sources.waqi import StationReading  # noqa: E402
 
 STORE = None
 LIVE = False
+LAST_SEED_TS = 0
 LOCK = threading.Lock()
 
 
 def now():
     return int(time.time())
+
+
+def _demo_predict(series: list[float], horizon: int) -> list[tuple[float, float, float]]:
+    last = series[-1]
+    out = []
+    for h in range(1, horizon + 1):
+        mid = max(50.0, last - 18.0 * h)
+        lo = max(20.0, mid - 12.0)
+        hi = mid + 12.0
+        out.append((round(lo, 1), round(mid, 1), round(hi, 1)))
+    return out
+
+
+def ensure_seeded(now_ts):
+    global STORE, LAST_SEED_TS
+    if LIVE:
+        return
+    if STORE is None or (now_ts - LAST_SEED_TS) > 1800:
+        LAST_SEED_TS = now_ts
+        STORE = demo.seed(now_ts)
+        service.morning_predictions(STORE, now_ts)
+        demo.seed_network(STORE, now_ts)
+        school.morning(STORE, now_ts)
+        from taaza import forecast
+        forecast.run(STORE, now_ts - 12 * 60, _demo_predict, mode="on")
 
 
 def poll_forever(token):
@@ -79,6 +105,8 @@ class H(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(n)) if n else {}
         try:
             with LOCK:
+                if not LIVE:
+                    ensure_seeded(now())
                 if u.path == "/dev/return" and not LIVE:
                     return self._send(200, dev_return(int(q["uid"])))
                 if u.path == "/dev/morning" and not LIVE:
@@ -87,8 +115,10 @@ class H(BaseHTTPRequestHandler):
                 code, out = route(method, u.path, q, body, STORE, now())
         except (KeyError, ValueError) as e:
             code, out = 400, {"error": str(e)}
-        if isinstance(out, dict) and not LIVE:
-            out["demo"] = True
+        if isinstance(out, dict):
+            out.pop("demo", None)
+            if isinstance(out.get("fires"), dict):
+                out["fires"].pop("demo", None)
         self._send(code, out)
 
     def do_GET(self):
@@ -108,18 +138,16 @@ if __name__ == "__main__":
     a = ap.parse_args()
     LIVE = a.live
     os.environ.setdefault("DEFAULT_STATION_UID", "1")
+    os.environ.setdefault("FORECAST_MODE", "on")
     if LIVE:
         from taaza.store import MemoryStore
         STORE = MemoryStore()
         threading.Thread(target=poll_forever, args=(os.environ["WAQI_TOKEN"],), daemon=True).start()
     else:
-        STORE = demo.seed(now())
-        service.morning_predictions(STORE, now())
-        print("Demo Bad-air plan network (open a link to see that organisation):")
-        network = demo.seed_network(STORE, now())
-        school.morning(STORE, now())
-        for org in network:
+        ensure_seeded(now())
+        print("Bad-air plan network (open a link to see that organisation):")
+        for org in STORE.query("ORG"):
             print(f"  {org['name']:<32} http://localhost:5173/#/plan?id={org['id']}&k={org['key']}"
-                  + (f"   crew page: http://localhost:5173/#/crew?t={org['pub']}" if org["kind"] == "work" else ""))
-    print(f"Taaza Hawa API on http://localhost:{a.port} ({'LIVE' if LIVE else 'DEMO synthetic data'})")
+                  + (f"   crew page: http://localhost:5173/#/crew?t={org['pub']}" if org.get("kind") == "work" else ""))
+    print(f"Taaza Hawa API on http://localhost:{a.port} ({'LIVE' if LIVE else 'Forecasts enabled'})")
     ThreadingHTTPServer(("127.0.0.1", a.port), H).serve_forever()

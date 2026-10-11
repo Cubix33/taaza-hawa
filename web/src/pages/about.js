@@ -29,7 +29,15 @@ export function view() {
       <div class="sc-row">${pair(200, 323, "up")}${pair(150, 92, "down")}</div>
       <p class="sc-cap">${t("scaleAir")}</p>
       <p>${t("scaleNote")}</p>
-      <p class="muted small">${t("scaleClock")}</p>
+    </section>
+
+    <section class="panel clock-proof">
+      <h2 class="h2s">${esc(t("clockTitle"))}</h2>
+      <p>${esc(t("scaleClock"))}</p>
+      <p class="muted">${esc(t("clockEvidence"))}</p>
+      <pre><code>ts = int(datetime.fromisoformat(t["iso"]).timestamp())</code></pre>
+      <p class="muted small">${esc(t("clockFix"))}</p>
+      <a href="https://github.com/Cubix33/taaza-hawa/blob/main/backend/src/taaza/sources/waqi.py" target="_blank" rel="noopener">${esc(t("clockCodeLink"))} ${icon.arrow}</a>
     </section>
 
     <section class="panel never">

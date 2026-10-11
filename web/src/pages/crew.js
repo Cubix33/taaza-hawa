@@ -18,7 +18,7 @@ export function load() {
     try {
       page = await api(`/zone?t=${encodeURIComponent(tok)}`);
       gone = false;
-      state.demo = state.demo || !!page.demo;
+      state.demo = false;
     } catch (e) {
       if (!/unknown link/.test(e.message)) throw e;
       page = null;

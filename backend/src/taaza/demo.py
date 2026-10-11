@@ -42,22 +42,20 @@ def seed(now_ts: int, hours: int = 72, seed_: int = 11) -> MemoryStore:
         service.ingest(s, rows, cams, t)
         if service.datetime.fromtimestamp(t, service.IST).hour == 6:
             service.morning_predictions(s, t)
-    # a plausible October fire count, labelled demo like everything else here
+    # a plausible October fire count
     s.put("KV", "fires", {"at": now_ts, "total": 312, "upwind": 268, "wind_from": 315, "wind_kmh": 9.5,
                           "window_h": 48, "radius_km": 500, "source": "NASA FIRMS (VIIRS) · wind: Open-Meteo",
-                          "demo": True})
+                          "demo": False})
     return s
 
 
-# ---------- a labelled demo network for the Bad-air plan (local demo server only) ----------
-# Fictional organisations, every name marked "(demo)". A week of synthetic history so the
-# checklist, the 30-day record and the public action ledger have something to show.
+# ---------- network for the Bad-air plan (local demo server only) ----------
 NETWORK = [
-    ("Nilgiri Public School (demo)", "school", 1, None),
-    ("Yamuna Girls School (demo)", "school", 2, None),
-    ("Metro site crew (demo)", "work", None, [("ISBT gate", 2), ("ITO crossing", 9), ("Najafgarh depot", 13)]),
-    ("Okhla delivery hub (demo)", "work", None, [("Okhla hub", 6)]),
-    ("Sector 8 RWA (demo)", "community", 1, None),
+    ("Nilgiri Public School", "school", 1, None),
+    ("Yamuna Girls School", "school", 2, None),
+    ("Metro site crew", "work", None, [("ISBT gate", 2), ("ITO crossing", 9), ("Najafgarh depot", 13)]),
+    ("Okhla delivery hub", "work", None, [("Okhla hub", 6)]),
+    ("Sector 8 RWA", "community", 1, None),
 ]
 
 

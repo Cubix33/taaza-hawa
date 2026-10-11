@@ -13,8 +13,8 @@
 </style></head>
 <body><div class="frame">
   <div class="kicker">Thirty-six green tests, one wrong clock</div>
-  <h1 style="font-size:34px">WAQI's <span class="mono" style="font-size:30px">time.v</span> is not UTC</h1>
-  <p class="sub" style="font-size:15px">It is the station's <b>local clock time</b> stored as an epoch. Read it as UTC in Delhi and every reading looks 5 h 30 min younger than it is.</p>
+  <h1 style="font-size:34px">The clock field we trusted was 5 h 30 min off</h1>
+  <p class="sub" style="font-size:15px">In the WAQI payloads we checked, <span class="mono">time.v</span> encoded the local wall clock as an epoch. Treating it as UTC made Delhi readings look younger.</p>
 
   <div class="grid">
     <div>

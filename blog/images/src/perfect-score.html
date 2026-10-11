@@ -8,13 +8,13 @@
   .note b { display: block; font: 600 20px/1.1 var(--serif); color: var(--ink); margin-bottom: 2px; }
 </style></head>
 <body><div class="frame">
-  <div class="kicker">The track record, 9 Oct 2026, 13:13 IST</div>
+  <div class="kicker">Pre-fix track record, 9 Oct 2026, 13:13 IST</div>
   <h1 style="font-size:34px">27 out of 27 is a bug report</h1>
-  <p class="sub" style="font-size:15px">Every check was right. Below: all 23 graded morning ranges for 9 Oct from the live <span class="mono" style="font-size:13px">/scoreboard</span>, with the station's real reading as a dot.</p>
+  <p class="sub" style="font-size:15px">Historical view: 23 graded morning ranges, with the station reading as a dot. The values were still on WAQI's US scale, while the old chart used CPCB band labels.</p>
   <svg id="c" width="792" height="350" viewBox="0 0 792 350" style="margin-top:8px"></svg>
   <div class="notes">
     <div class="note"><b>90 points</b>the width of every range: calibration was still warming up, so all 24 got the same fallback width</div>
-    <div class="note"><b>18 of 23</b>ranges cross a band edge (100 or 200), so one range covers two different answers</div>
+    <div class="note"><b>18 of 23</b>ranges crossed the old chart's 100 or 200 line; we had to inspect both width and scale</div>
     <div class="note"><b>37–87 %</b>where each real reading landed inside its range: none came near an edge</div>
   </div>
 </div>

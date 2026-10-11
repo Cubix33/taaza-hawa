@@ -34,14 +34,12 @@ function parseHash() {
 
 function layout() {
   const page = PAGES[state.route];
-  const demo = state.demo || state.card?.demo || state.board?.demo;
   return `
   <header class="topbar"><div class="wrap topbar-in">
     <a class="brand" href="#/">${icon.logo}<div><b>${t("brand")}</b><small>${t("tagline")}</small></div></a>
     <nav class="mainnav" aria-label="main">${NAV.map(([r, k]) => `<a href="#/${r === "home" ? "" : r}" class="nav-${r} ${state.route === r ? "on" : ""}" ${state.route === r ? 'aria-current="page"' : ""}>${t(k)}</a>`).join("")}</nav>
     <button id="lang" class="lang" aria-label="${hi() ? "Switch to English" : "हिंदी में देखें"}">${hi() ? "English" : "हिंदी"}</button>
   </div></header>
-  ${demo ? `<div class="demo-bar">◆ ${t("demo")}</div>` : ""}
   <main id="main" class="route-${state.route}">${state.error && state.route !== "about" ? errorView() : page.view()}</main>
   <footer class="site-foot"><div class="wrap foot-in">
     <div class="foot-brand"><a class="brand" href="#/">${icon.logo}<div><b>${t("brand")}</b></div></a><p>${t("footLine")}</p></div>

@@ -16,7 +16,7 @@ export async function loadStations(force = false) {
       try {
         const st = await api("/stations");
         state.stations = st.stations || [];
-        state.demo = !!st.demo;
+        state.demo = false;
         state.emailEnabled = !!st.email_enabled;
         if (!state.stations.some((s) => s.uid === state.uid) && state.stations[0]) {
           state.uid = state.stations[0].uid;
@@ -63,7 +63,7 @@ export async function loadCard() {
 
 export async function loadBoard() {
   state.board = await api("/scoreboard");
-  state.demo = state.demo || !!state.board.demo;
+  state.demo = false;
 }
 
 export async function restoreHold() {

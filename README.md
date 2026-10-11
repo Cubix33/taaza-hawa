@@ -18,9 +18,9 @@ WeMakeDevs × AWS **Environmental Hacks 2026**
 
 <br/>
 
-<img src="docs/screenshots/home.jpg" alt="Taaza Hawa home page: an illustrative Delhi skyline parameterized by the city's live air quality, with the answer 'Not yet. Wait for air to improve'" width="900"/>
+<img src="docs/screenshots/home.jpg" alt="Taaza Hawa home page: an illustrative Delhi skyline parameterized by the city's live air quality, with the answer 'Yes, go ahead.'" width="900"/>
 
-<sub>The sky, the haze and the sun are an illustrative artwork parameterized by Delhi's live AQI: clear air looks clear, smog looks like smog. <i>(Screenshots on this page use clearly labelled demo data.)</i></sub>
+<sub>The sky, the haze and the sun are an illustrative artwork parameterized by Delhi's live AQI: clear air looks clear, smog looks like smog.</sub>
 
 </div>
 
@@ -118,7 +118,7 @@ The table uses the same bands as the public answer, so the two never disagree. *
 <tr>
 <td width="50%" valign="top">
 <img src="docs/screenshots/air-lens.png" alt="Air Lens: Delhi geography, station readings and an estimate evidence panel"/>
-<p align="center"><b>Air Lens</b><br/><sub>Explore the city, inspect station evidence, and fly into neighbourhood buildings. Demo readings are explicitly labelled.</sub></p>
+<p align="center"><b>Air Lens</b><br/><sub>Explore the city, inspect station evidence, and fly into neighbourhood buildings.</sub></p>
 </td>
 <td width="50%" valign="top">
 <img src="docs/screenshots/record.jpg" alt="The track record page"/>

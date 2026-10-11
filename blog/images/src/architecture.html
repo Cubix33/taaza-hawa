@@ -16,11 +16,11 @@
 </style></head>
 <body><div class="frame">
   <div class="kicker">How Taaza Hawa is built</div>
-  <h1 style="font-size:34px">Five Lambdas, one table, and a promise that waits</h1>
+  <h1 style="font-size:34px">One table, a waiting promise, and a shadow forecast</h1>
   <p class="sub" style="font-size:15px">Every service is there for one job. Solid arrows are the main path; dashed means optional or failure handling.</p>
 
   <!-- row 1: sense -->
-  <div class="b sched" style="left:44px;top:170px;width:168px;height:78px"><h4>EventBridge Scheduler</h4><p>every 15 min, plus 06:30 and 17:30 IST</p></div>
+  <div class="b sched" style="left:44px;top:170px;width:168px;height:78px"><h4>EventBridge Scheduler</h4><p>15-min polls, 06:30 plans, hourly forecast</p></div>
   <div class="b lam" style="left:250px;top:170px;width:180px;height:78px"><h4>Lambda · poller</h4><p>fetch, re-estimate, calibrate, resolve promises</p></div>
   <div class="b ext" style="left:468px;top:170px;width:180px;height:78px"><h4>Upstream feeds</h4><p>WAQI stations · Open-Meteo CAMS · CPCB bulletin PDF</p></div>
   <div class="b mon" style="left:686px;top:170px;width:150px;height:78px"><h4>CloudWatch</h4><p>alarm when the poller keeps failing</p></div>
@@ -37,7 +37,8 @@
   <!-- row 4: voice, words, timeout -->
   <div class="b ai opt" style="left:44px;top:600px;width:168px;height:96px"><h4>Bedrock · Haiku 4.5</h4><p>optional: rephrases one Hindi sentence, can't change a number</p></div>
   <div class="b ai" style="left:250px;top:600px;width:180px;height:96px"><h4>Polly · Kajal</h4><p>reads the answer aloud; text built server-side, cached</p></div>
-  <div class="b lam opt" style="left:468px;top:600px;width:180px;height:96px"><h4>Lambda · expire</h4><p>no reading in 72 h → "missed, still waiting"</p></div>
+  <div class="b lam opt" style="left:468px;top:600px;width:180px;height:96px"><h4>Lambda · expire</h4><p>no reading in 72 h: couldn't verify</p></div>
+  <div class="b ai" style="left:686px;top:600px;width:150px;height:96px"><h4>Chronos on Lambda</h4><p>hourly 3-hour forecast; shadow-graded before release</p></div>
 
   <svg width="880" height="750" viewBox="0 0 880 750">
     <defs>

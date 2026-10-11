@@ -1,231 +1,129 @@
-<!--
-  AWS Builder Center draft. Publish on 11 Oct, after the two blockers in PUBLISHING.md are cleared.
-  Every {{PLACEHOLDER}} must be replaced or deleted before publishing; the list is in PUBLISHING.md.
-  Builder Center fields:
-    Title:       The Number Has an Age
-    Description: (the italic paragraph under the title below)
-    Cover image: images/cover.png
-    Tags:        aws-step-functions, amazon-dynamodb, aws-lambda, amazon-eventbridge, amazon-polly
--->
-
 # The Number Has an Age
 
-*We built a Delhi air-quality app whose one job is to tell you how old the number is. For two days it got the age wrong by five and a half hours, and all 36 tests passed. This post covers how a promise became an AWS Step Functions execution, why a perfect score was a bug report, and what real data did to the rest of the plan.*
+*We built Taaza Hawa to show Delhi residents how old an air-quality reading is, give a range when it goes stale, and check that range when the station reports again. Then our own app called old readings fresh. Here's what the live data made us fix.*
 
 ![Taaza Hawa: the number has an age](images/cover.png)
 
-At 13:13 IST on 9 October, our live API said 22 of Delhi's 24 stations had reported **0 minutes ago**.
+At 13:13 IST on 9 October, our live API said **22 of Delhi's 24 stations had reported 0 minutes ago**.
 
-That should have been impossible. WAQI, the free mirror we read, updates about once an hour. Twenty-two stations reporting in the same minute isn't fresh data. It's a clock reading the wrong time zone.
+Twenty-two stations, all at once. We knew the feed updated roughly hourly. We had built an app called **Taaza Hawa**, or “fresh air,” around one question: how old is this number? And our answer to that question was wrong.
 
-The app is called **Taaza Hawa** (ताज़ा हवा, "fresh air"). Its whole pitch is that every air-quality number has an age, and you deserve to see it. For the first two days of the hackathon it showed the wrong age on nearly every card. Every test was green.
+The next two days changed the project. We fixed the clock, found a second mistake in the AQI scale, regraded our earlier estimates, and kept the misses on the public record. The record we built to check our predictions ended up checking us.
 
-> **In short:** we set out to show the age of Delhi's AQI and grade our own estimates in public. Real data broke three of our assumptions, in this order: the clock, our idea of what a good track record looks like, and the scale. Fixing each one made the product more honest than the plan.
+[Try the live app](https://main.d2r1frd99buxhf.amplifyapp.com/) · [Read the code](https://github.com/Cubix33/taaza-hawa)
 
-Live: **[main.d2r1frd99buxhf.amplifyapp.com](https://main.d2r1frd99buxhf.amplifyapp.com/)** · Code: **[github.com/Cubix33/taaza-hawa](https://github.com/Cubix33/taaza-hawa)** · Demo: **{{YOUTUBE_URL}}**
+## It started with a morning decision
 
-## The problem is not the AQI, it's the age
+Before a run, a walk, or a ride in Delhi, I want one useful answer: should I go now? A number by itself doesn't settle it. The reading might be 20 minutes old or 20 hours old, and those are different situations.
 
-Every October morning, someone in Delhi checks one number before a run, a walk or a cycle. That number has no age, no source and no error bar.
+On 4 October, our [first feed audit](https://github.com/Cubix33/taaza-hawa/blob/main/docs/wayfinder/research/R2-data-feeds-audit.md) flagged Anand Vihar and NSIT Dwarka as stale for more than a day. We later found that the audit had understated their ages by 5 hours 30 minutes because it read the same clock field incorrectly. The [CPCB bulletin check](https://github.com/Cubix33/taaza-hawa/blob/main/docs/wayfinder/research/R8-cpcb-source-staleness-check.md) recorded 43 of 46 Delhi stations participating that day. A person looking at an app still couldn't easily tell when its number was measured, or what to do when it was old.
 
-It is often old. On 4 October, the mirror most apps read showed Anand Vihar **31 hours** stale and NSIT Dwarka **56 hours** stale. On the same day, CPCB's own bulletin said 43 of 46 Delhi stations had reported.
+So we gave each station card 3 things: a plain Go / Wait / Stay answer, the measurement's age and source, and a range if the reading is more than 3 hours old. The advice uses the top of that range. The app is in Hindi and English, with a spoken answer through Amazon Polly and a WhatsApp share for someone who needs the same information.
 
-Last season's loudest complaint on r/delhi wasn't "what is the AQI?". It was "can I trust it?":
+![The live Check my air page, showing Alipur's reading and its age](images/live-check.png)
+*Alipur on 11 October, after the clock and scale fixes. This is a live reading, not demo data.*
 
-> "too much smog outside… but the aqi is still showing 280?" (a Reddit user, r/delhi, Oct 2025)
+## The idea got smaller before it got useful
 
-**In simple words:** imagine a weather app that shows yesterday's temperature as if it were today's, without telling you. Taaza Hawa tells you when the reading was taken. If it's old, it gives an honest range instead of a single number. Later, it checks itself in public against what the station actually reported.
+We first explored a “right hour for school PE” planner. The [backtest that killed it](https://github.com/Cubix33/taaza-hawa/blob/main/docs/research/03-k1-measured-backtest.md) was hard to ignore: at DTU, a model put 13:00 ozone at **191 µg/m³** while the station measured **37**. We couldn't build a precise hour picker on that gap.
 
-## What we built
+We narrowed the first product to the evidence we could show. Read stations, show their age, estimate a stale value from nearby stations and bias-corrected CAMS, then let the station's next reading grade the estimate. Air Lens came later so people could inspect the stations and inputs on a map. A 06:30 school plan and a printable notice also grew out of the same rule, though we haven't measured a school using them yet.
 
-| | |
-|---|---|
-| **One plain answer** | हाँ, जाइए (*Yes, go*) · अभी नहीं (*Not yet, wait*) · नहीं, आज अंदर रहिए (*No, stay in today*). The answer comes from a fixed, published rule on the CPCB AQI bands, plus a short "Why?" |
-| **The age, always** | Every card says how many hours ago the station measured, and which source it came from. |
-| **A range when it's old** | If a reading is more than 3 hours old, the card shows "AQI probably 232–264". That range comes from the three nearest live stations plus bias-corrected CAMS. The advice uses the top of the range. |
-| **Check it and tell me** | One tap, no account. A Step Functions execution waits until that station reports again, then grades our range. |
-| **A public track record** | Every station, every morning: right, or missed by N. |
-| **Listen and share** | Amazon Polly reads the answer aloud in Hindi or English, and there's a one-tap WhatsApp share to family. |
+We built an hourly 3-hour forecast with Amazon Chronos too. It runs in **shadow mode**: the app collects grades, but the forecast doesn't change the Go / Wait / Stay answer or appear as a confident “wait until” promise. It needs a record against a simple “same as now” baseline first.
 
-![The Check my air page: the answer, why, how old the number is, and the range on a CPCB-coloured dial](../docs/screenshots/check.jpg)
-*Figure 1. The answer, the reason, the age and the range on one card. {{RECAPTURE_WITH_LIVE_DATA}}*
+## A promise that waits for the station
 
-## A promise is a waiting execution
-
-The feature we're proudest of is the smallest piece of code. When you tap **Check it and tell me**, the check runs no loop and no timer of its own. A Step Functions Standard execution starts and parks itself on `waitForTaskToken`:
+On a stale card, someone can tap **Hold me to this**. We save the range they saw. An AWS Step Functions Standard execution waits for that station's next reading through `waitForTaskToken`. The poller checks stations every 15 minutes, and when it sees a reading measured after the promise, it sends the result back to the execution.
 
 ```json
 "ParkUntilStationSpeaks": {
   "Type": "Task",
   "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
-  "Parameters": { "FunctionName": "${RegisterFnArn}",
-                  "Payload": { "holdId.$": "$.holdId", "token.$": "$$.Task.Token" } },
+  "Parameters": {
+    "FunctionName": "${RegisterFnArn}",
+    "Payload": { "holdId.$": "$.holdId", "token.$": "$$.Task.Token" }
+  },
   "TimeoutSeconds": 259500,
-  "Catch": [{ "ErrorEquals": ["States.Timeout"], "Next": "ExpireHold" }],
   "Next": "Notify"
 }
 ```
 
-The register Lambda saves the task token in DynamoDB next to the promise. The poller already runs every 15 minutes to read the stations. When it sees a newer reading for that station, it sends the real value back:
+The register Lambda puts the token beside the promise in DynamoDB. The poller calls `SendTaskSuccess` when a qualifying reading arrives; the notify Lambda records the result and can send an optional email. The [full state machine](https://github.com/Cubix33/taaza-hawa/blob/main/infra/hold.asl.json) also handles a timeout. If no newer reading arrives within 72 hours, the page says **couldn't verify** and excludes it from the hit rate.
 
-```python
-token = hold.get("task_token")
-if not token:
-    return
-try:
-    sfn().send_task_success(taskToken=token, output=json.dumps(out))
-except Exception as e:  # token already used / execution gone: grading is already stored
-    print("send_task_success skipped:", repr(e))
-```
+![The waiting-execution loop](images/loop.png)
+*The station's next reading grades the saved range. Diagram values are illustrative.*
 
-The execution flips from **Running** to **Succeeded**, and the notify Lambda records the result for the page and sends an optional SES email. A promise *is* a waiting execution. It can wait 72 hours at no compute cost, and you can watch it in the console. (259,500 seconds is 72 hours plus a 5-minute buffer.)
+The rule behind the judge fits in one line of [code](https://github.com/Cubix33/taaza-hawa/blob/main/backend/src/taaza/grader.py): `reading_ts > created_ts`. A backfilled older hour can't grade a promise we made later. That one line became much more important once we found the clock bug.
 
-![A promise is a waiting execution](images/loop.png)
-*Figure 2. The station's own next reading is the judge. Values are illustrative.*
+## The clock made old air look fresh
 
-Two rules keep the judge honest:
+WAQI returned a timestamp with both a numeric `v` and an offset-bearing `iso`. We treated `v` as a UTC Unix timestamp. In the [public WAQI demo feed](https://api.waqi.info/feed/shanghai/?token=demo), the two fields disagreed by exactly the local time-zone offset: `v` encoded the wall clock as if it were UTC, while `iso` identified the actual instant. That's what we observed in the feed, so we now parse `iso` and use `tz` with `v` only as a fallback.
 
-- **Only a reading measured *after* the promise counts.** A backfilled old hour can't grade it:
-  ```python
-  def is_judge_reading(created_ts: int, reading_ts: int) -> bool:
-      return reading_ts > created_ts
-  ```
-- **No evidence is not a miss.** We first counted a 72-hour timeout as "missed". It isn't: we just couldn't check. Timeouts now show as *couldn't verify* and stay out of the hit rate.
+For Delhi, the error was **5 hours 30 minutes**. At 13:32 IST on 9 October, Alipur's 13:00 station reading was stored as 18:30. Our age function then turned a future timestamp into `0 minutes` with `max(0, ...)`. A guard against negative display values had hidden the evidence.
 
-## A range calibrated on live data
+![How the offset made a reading look new](images/clock-bug.png)
+*The old parser shifted Delhi readings 5 hours 30 minutes forward. The age clamp displayed them as 0 minutes old.*
 
-The plan was to backtest our ranges on last season's OpenAQ history. On 4 October that feed was about 46 hours stale, so the backtest never ran.
+| What changed | Before | After |
+|---|---:|---:|
+| Stations shown as 0 minutes old | 22 of 24 at 13:13 IST, 9 Oct | 0 of 24 at 13:06 IST, 11 Oct |
+| A reading entered the “more than 3 hours old” branch | About 8 hours 30 minutes after measurement | After 3 hours |
+| A neighbour could count as recent | Up to about 8 hours 30 minutes old | Up to 3 hours old |
 
-Instead, the range calibrates itself on every poll. For each station that has just reported, the poller hides that station's own reading, re-estimates it from the neighbours and CAMS, and records the error. That is leave-one-out on live data. The estimator never uses a station's own value as an input, which is why hiding it works.
+The bug reached the public grading record as well: a reading taken before a promise could appear to have happened after it. Our migration moved stored readings to the real UTC time, converted their scale, and regraded saved promises using the first station reading actually measured after each promise. It also restarted calibration on the corrected data. [The regression tests](https://github.com/Cubix33/taaza-hawa/blob/main/backend/tests/test_scale_and_clock.py) use the observed WAQI payload and cover that migration.
 
-The range is split-conformal over those errors, targeting 80% coverage:
+We had **36 green tests** before finding this. Our backend timestamp tests used values we had made up; none parsed the real payload. The lesson was painful and specific: when time is part of the product, an external timestamp needs a real-feed test.
 
-```python
-def conformal_offsets(residuals, coverage=0.80, min_n=20):
-    n = len(residuals)
-    if n < min_n:
-        return (-45.0, 45.0, False)  # placeholder band, flagged uncalibrated in the UI
-    alpha = 1.0 - coverage
-    s = sorted(residuals)
-    k_hi = min(n, math.ceil((n + 1) * (1 - alpha / 2)))
-    k_lo = max(1, math.floor((n + 1) * alpha / 2))
-    return (s[k_lo - 1], s[k_hi - 1], True)
-```
+## The number had the wrong scale too
 
-Until a station has 20 recorded errors, the card says *calibration warming up*. Keep that `±45` in mind; it comes back later.
+The clock check led us to another assumption. WAQI's pollutant fields are [individual AQI values](https://aqicn.org/api/) on its [US EPA scale](https://aqicn.org/scale/). Our decision rule uses India's CPCB bands. We were feeding one scale into rules written for the other.
 
-## Thirty-six green tests and a wrong clock
+At 13:13 IST on 9 October, our conversion would have turned **5 of 24 “Go” answers** from the old implementation into “Wait”. The fix sits at the [WAQI parser](https://github.com/Cubix33/taaza-hawa/blob/main/backend/src/taaza/sources/waqi.py): turn each reported pollutant index back into an estimated concentration using WAQI's scale table, then compute the CPCB sub-index before any advice or range uses it. The site now explains that scale change on the Check page and the Why trust us page.
 
-WAQI's feed reports time like this:
+This is a conversion from a published index, not a fresh measurement of pollutant concentration. It has limits. Still, applying the same scale to the displayed number, the range, and the decision rule removes a disagreement we created ourselves.
 
-```json
-"time": { "s": "2026-10-09 06:00:00", "tz": "+05:30",
-          "v": 1791525600, "iso": "2026-10-09T06:00:00+05:30" }
-```
+## Why trust a record that once said 27 out of 27?
 
-We read `v` as a UTC epoch. It isn't. It's the station's **local clock time** written as if it were UTC. You can check it on WAQI's public demo feed, where `v` decodes to 14:00 UTC but `iso` says 14:00+08:00, which is 06:00 UTC.
+On 9 October, the public page said **27 checks, 27 right**. That looked reassuring until we opened the ranges. Many were still using our **±45-point warm-up band**. Some were wide enough to cross an AQI category boundary. The timestamp bug had also allowed some checks to be graded by the wrong station hour.
 
-In Delhi, that made every reading look **5 hours 30 minutes younger** than it was. At 13:32 IST on 9 October, our API had Alipur's 13:00 reading stored as **18:30**, five hours in the future. The card said ताज़ा · 0 मिनट (*fresh · 0 minutes*). One line of defensive code had quietly hidden the impossible:
+![The early 27 out of 27 record](images/perfect-score.png)
+*The early record on 9 October, before the timestamp and scale fixes. Its US-scale values were still shown under CPCB band labels, which is part of why we rechecked it.*
 
-```python
-def age_minutes(now_ts, reading_ts):
-    return max(0, (now_ts - reading_ts) // 60)   # "from the future" became "0 minutes old"
-```
+We target 80% coverage, so a short perfect run proves very little. After the migration, the record includes real misses. At **13:06 IST on 11 October**, the [live scoreboard](https://main.d2r1frd99buxhf.amplifyapp.com/#/record) showed **66 hits in 74 graded checks, 8 misses**. Of those 74, **51** were made while calibration was warming up; their mean range width was **186 AQI points**. The rate will change as more readings arrive, and those wide early ranges should make anyone cautious about celebrating it.
 
-![WAQI's time.v is not UTC](images/clock-bug.png)
-*Figure 3. A 3½-hour-old reading looked like it came from two hours in the future, so it showed as "0 min old".*
+Our live calibration has a simple check on itself. When a station reports, we hide that station's new value, estimate it from its neighbours and CAMS, and record the error against what the station actually said. Once a station has 20 such errors, the range uses their observed spread to target 80% coverage. Until then, the UI says **calibration warming up**. A station that never reports again produces an unverified check, not a miss.
 
-The knock-on effects reached every feature:
+The trust case is visible and limited: the source, measurement time, estimate inputs, saved range, station result, and misses are all open to inspection. We also show [the clock and scale fixes](https://main.d2r1frd99buxhf.amplifyapp.com/#/about) that made our first record unreliable.
 
-| | Before the fix | After the fix |
-|---|---|---|
-| Stations shown as "0 min old" (9 Oct, 13:13 IST) | 22 of 24 | {{ZERO_MIN_AFTER}} |
-| A reading turned "stale" (so the range appeared) after | really ~8 h 30 min | 3 h |
-| Neighbours accepted as "live" inputs | up to ~8 h 30 min old | up to 3 h old |
-| A reading allowed to grade a promise | from up to 5 h 30 min *before* it | only after it |
+## One AWS job for each part of the loop
 
-**Why every test passed:** all 33 backend tests built readings with timestamps we made up, such as `NOW = 1_790_000_000`. None of them parsed a real WAQI payload. The fix was two lines in the parser (read `time.iso`) and a regression test built from WAQI's own payload. {{FIX_COMMIT}}
+![Taaza Hawa's AWS architecture](images/architecture.png)
+*AWS SAM deployment in ap-south-1. The forecast job is shadow-graded before it is shown as advice.*
 
-The lesson for an app whose product is the age of a number: **a clamp that turns "impossible" into "zero" is where your worst bug will hide.**
-
-## 27 out of 27 is a bug report
-
-By lunchtime on 9 October, the public track record read **27 checks, 27 right**. It looked great, and it shouldn't have.
-
-![27 out of 27 is a bug report](images/perfect-score.png)
-*Figure 4. Every graded morning range on 9 Oct (live /scoreboard), with the station's real reading as a dot.*
-
-A range that targets 80% coverage should miss about one time in five. Perfect means the range is too wide to miss. This chart shows why:
-
-- **Every morning range was exactly 90 points wide.** That's the `±45` warm-up placeholder from earlier: no station had 20 live errors yet.
-- **18 of the 23 ranges crossed a band edge** (100 or 200), so a single range covered two different answers.
-- **Every real reading landed 37–87% of the way up its range.** None came near an edge.
-- Some of those "hits" were graded by readings the clock bug had let in from *before* the promise.
-
-So we voided every grade made before the timestamp fix ({{VOIDED_COUNT}} checks) and labelled them "before timestamp fix". The record shows the count next to every percentage. Since the fix: **{{HITS}} of {{GRADED}}**. {{UPDATE_ON_PUBLISH_DAY}}
-
-## The number had a scale, too
-
-<!-- K3: keep ONE of the two paragraphs below and delete the other. See PUBLISHING.md, blocker 2. -->
-
-**[If converted]** While fixing the clock, we checked the scale. WAQI publishes Indian stations on the **US EPA** index, but our Go/Wait/Stay rule uses CPCB bands.
-
-At the edge we cared about, the two disagree badly. A WAQI PM2.5 value of 176 is about 104 µg/m³, which CPCB calls **Poor**, while the raw number reads as Moderate. At 13:13 IST on 9 October, **5 of our 24 "Go" answers should have been "Wait"**.
-
-We now convert WAQI's value back to a concentration using WAQI's own table, then compute CPCB's sub-index from that. Nothing in the UI changed except the answers that were wrong.
-
-**[If only labelled]** Every number is now labelled "AQI as reported by WAQI (US EPA scale)". Until the conversion ships, we make no CPCB-band claims in the video.
-
-## Smaller things that fought back
-
-- **The deployed site quietly read a server on the viewer's own laptop.** A production build without `VITE_API_URL` fell back to `localhost:8787`. It now fails loudly instead.
-- **Chrome auto-translate rewrote our Hindi toggle "हिं" to "Yes"** and undid every language switch. The fix: `translate="no"` on the page, and full-word labels on the toggle.
-- **The 3D map sometimes drew itself in a 400×300 box** after a re-render during MapLibre's load. A ResizeObserver fixed it.
-- **You could ask us to check a range you had never seen.** Fresh cards show no range, but the button still worked. The API now refuses with a `409`.
-- **Polly can't be used to read arbitrary text.** The server builds the sentence itself, caps it at 700 characters and caches audio by its text. A test sends `"ignored attacker text"` to prove it.
-
-## Seven ideas died before the clock started
-
-Before 8 October we killed seven ideas on evidence. One, a "right hour for school PE" planner, died to its own data. The CAMS model put 13:00 ozone at DTU at **191 µg/m³**, while the measured value was **37**. That's why CAMS only enters a Taaza Hawa estimate after five measured ratios have bias-corrected it.
-
-## The AWS side: one job per service
-
-![Five Lambdas, one table, and a promise that waits](images/architecture.png)
-*Figure 5. Region ap-south-1 (Mumbai), deployed with AWS SAM.*
-
-| Service | Its one job |
+| Service | Job |
 |---|---|
-| **EventBridge Scheduler** | Poll every 15 minutes, plus the 06:30 and 17:30 IST jobs, with no server |
-| **Lambda** (×5) | Poller, API, and the three steps of a check: register, expire, notify |
-| **DynamoDB** | One pay-per-request table: readings, calibration errors, promises, task tokens, cached audio |
-| **Step Functions Standard** | A check *is* a waiting execution, for up to 72 hours |
-| **Lambda Function URL** | A public API without API Gateway |
-| **Polly (Kajal)** | Reads the answer aloud. The text is built on the server and cached |
-| **SES** | Optional result email |
-| **Amplify Hosting** | The Vite web app, rebuilt on every push |
-| **CloudWatch** | An alarm when the poller keeps failing |
-| **Bedrock** (optional) | Rephrases one Hindi sentence. Every number in the template must survive, or the sentence is discarded |
+| EventBridge Scheduler | Run 15-minute polls, morning plans, the bulletin job, and hourly forecasts. |
+| Lambda | Fetch and process readings, serve the API, manage check executions, and run Chronos in a separate container job. |
+| DynamoDB | Hold readings, calibration errors, promises, task tokens, school plans, and cached audio. |
+| Step Functions Standard | Keep each check waiting for a station reading, up to 72 hours. |
+| Polly and SES | Read a server-built answer aloud; optionally email a check result or confirmed school plan. |
+| Amplify Hosting | Serve the web app. |
+| CloudWatch | Alarm on repeated poller failures. |
 
-Cost so far: **{{COST_FROM_BILLING_CONSOLE}}**. Nothing runs between polls. The only per-call costs are Polly, where each wording is synthesised once, and Bedrock if it is switched on.
+The app has a Lambda Function URL for its API. Bedrock can rephrase one Hindi sentence if enabled, but a guard rejects a changed number and the model never chooses the verdict. Chronos is a separate, shadow-mode forecast. The ordinary Go / Wait / Stay rule remains a fixed table.
 
-## What it does not claim
+## What we can say, and what we can't
 
-- **Station air, not your street.** It's an estimate, not the truth.
-- **The rule is set for healthy adults** deciding about a run, a walk or a ride. It isn't for children, or for anyone with heart or lung disease. It is not medical advice.
-- **It grades against the same CPCB station people distrust.** It can't settle "my purifier says 500". What it can tell you is how old the number is and how sure we are.
+Taaza Hawa describes air at a named station. It can't measure your street or settle what a home sensor sees. A range is an estimate, and an 80% target still allows misses. The adult activity answer is a simple rule for healthy adults, not medical advice. The school plan is built and printable, but we haven't measured whether a school has used it or changed a decision because of it.
 
-## Three rules we're keeping
+We learned to keep those limits on the screen, close to the answer. A beautiful card can make a weak number feel certain. Its age, source, scale, and track record need to be just as easy to see.
 
-1. **Test against the real payload, not the one you remember.** One recorded WAQI response in a fixture would have caught the clock on day one.
-2. **A perfect score is a bug report.** If an 80% range never misses, check its width before you celebrate.
-3. **Every sentence on screen is a claim.** Our first copy promised to tell parents when to "send the kids to play", while one fixed rule said *Go* at AQI 190. We cut the line rather than ship a promise the rule couldn't keep.
+## What we'll take into the next build
 
----
+1. **Test the feed you actually receive.** A real WAQI timestamp fixture would have caught our 5-hour-30-minute error before the first deploy.
+2. **Inspect perfect scores.** Look at range width, sample size, and which observation did the grading before calling a hit rate good.
+3. **Keep the judge independent.** The station's later reading grades the estimate; a timeout stays unverified.
 
-**Try it:** open the [live site](https://main.d2r1frd99buxhf.amplifyapp.com/), pick a station, and if its reading is more than 3 hours old, tap **Check it and tell me**. The [repo](https://github.com/Cubix33/taaza-hawa) deploys with AWS SAM (`sam build -t infra/template.yaml && sam deploy --guided`), and the backend tests run with no AWS account.
+Open the [live app](https://main.d2r1frd99buxhf.amplifyapp.com/), pick a station, and look at the age beside its AQI. If that reading is over 3 hours old, you can save the range and watch it get checked. The [repo](https://github.com/Cubix33/taaza-hawa) includes the AWS SAM stack and tests.
 
-**Credits:** {{BYLINE_AND_TEAM}}. Built during WeMakeDevs × AWS Environmental Hacks, 8–11 October 2026, Track: Air.
-**AI tools:** Claude Code (Claude Opus 5.5) helped write code, review it and draft this post. The structured review pass that caught the clock bug was run with it too. We checked every number in this post against the live API or the repo. {{EDIT_IF_NEEDED}}
-**Data:** WAQI (aqicn.org), Open-Meteo CAMS, the CPCB daily bulletin, and map tiles by OpenFreeMap (© OpenStreetMap contributors).
-
-*If you've built against a feed whose clock you don't own: how do you test for the time zone you didn't know was there?*
+*Built during WeMakeDevs × AWS Environmental Hacks, 8–11 October 2026. Data: WAQI (aqicn.org), Open-Meteo CAMS, CPCB bulletin, and OpenFreeMap / OpenStreetMap map data. Claude Code and Codex assisted with implementation, review, and writing; the technical claims here were checked against the code and dated live API responses.*

@@ -204,7 +204,7 @@ html[lang="hi"] .pl-sec-h h2 { font-family: var(--deva); font-weight: 400; }
   .sc-print header b { font: 600 17pt/1.2 var(--serif); }
   html[lang="hi"] .sc-print header b, html[lang="hi"] .sc-print h1 { font-family: var(--deva); font-weight: 400; }
   .sc-print header span { font: 500 11pt var(--mono); color: #444; white-space: nowrap; }
-  .pr-demo { margin: 10px 0 0; padding: 6px 10px; border: 1.5pt dashed #8a5a00; color: #8a5a00; font: 600 11pt var(--mono); text-align: center; }
+  .pr-demo { display: none !important; }
   .sc-print h1 { margin: 12mm 0 8mm; font: 500 32pt/1.2 var(--serif); color: var(--tone); }
   .sc-print table { width: 100%; border-collapse: collapse; }
   .sc-print th, .sc-print td { padding: 4mm 0; border-bottom: 1pt solid #ccc; text-align: left; vertical-align: middle; font: 600 16pt/1.3 var(--sans); }

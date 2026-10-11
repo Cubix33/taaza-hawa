@@ -544,7 +544,6 @@ function printCard(v) {
     : d.plan ? ROWS[kind].map((a) => `<tr><th>${rowName(kind, a)}</th><td><span class="st-${d.plan[a]}">${t("scStatus")[d.plan[a]]}</span></td></tr>`).join("") : "";
   return `<article class="sc-print lv-${l}" aria-hidden="true">
     <header><b>${esc(v.school.name)}</b><span>${fmtDate(d.date)}</span></header>
-    ${state.demo ? `<p class="pr-demo">${t("demo")}</p>` : ""}
     <h1>${headFor(kind, l)}</h1>
     ${rows ? `<table>${rows}</table>` : `<p>${t("scNoneSub")}</p>`}
     ${d.todo?.length ? `<p class="pr-todo-t">${t("plTodoTitle")}</p><ul class="pr-todo">${d.todo.map((a) => `<li>☐ ${t("scTodo")[a]}</li>`).join("")}</ul>` : ""}

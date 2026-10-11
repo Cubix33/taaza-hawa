@@ -87,8 +87,7 @@ html[lang="hi"] .brand b { font-family: var(--deva); font-weight: 400; font-size
 .mainnav a.on { color: var(--ink); font-weight: 600; } .mainnav a.on::after { transform: scaleX(1); }
 .lang { height: 38px; padding: 0 14px; border-radius: 99px; border: 1.5px solid var(--ink); background: transparent; font-weight: 600; font-size: .86rem; }
 .lang:hover { background: var(--ink); color: var(--bg); }
-.demo-bar { padding: 7px 16px; text-align: center; font: 500 .78rem var(--mono); color: #7a5300; background: repeating-linear-gradient(-45deg, #fbefcf 0 10px, #f8e8bf 10px 20px); }
-@media all { .demo-bar { color: #f3cf86; background: repeating-linear-gradient(-45deg, #2b2410 0 10px, #241e0d 10px 20px); } }
+.demo-bar { display: none !important; }
 
 /* ---------- home: the sky ---------- */
 .home-hero { position: relative; }
@@ -789,6 +788,10 @@ html[lang="hi"] .ai-chips .ai-lead { letter-spacing: 0; text-transform: none; fo
 @media (max-width: 560px) { .t-grid { grid-template-columns: 1fr; } .t-hero { flex-direction: column; text-align: center; } .t-hero-sub { max-width: none; } }
 @media (prefers-reduced-motion: reduce) { .t-ring-fg { animation: none; } .t-card { transition: none; } }
 .scale-sec { background: linear-gradient(135deg, var(--sky-soft), var(--surface) 70%); }
+.clock-proof pre { overflow-x: auto; padding: 14px 16px; margin: 16px 0; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); }
+.clock-proof code { font: 500 .88rem/1.5 var(--mono); }
+.clock-proof a { display: inline-flex; align-items: center; gap: 6px; color: var(--brand); font-weight: 600; }
+.clock-proof a svg { width: 16px; height: 16px; }
 .sc-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px 72px; margin: 26px 0 6px; }
 .sc-pair { display: flex; align-items: center; gap: 14px; }
 .sc-c { display: grid; place-content: center; text-align: center; width: 128px; height: 128px; border-radius: 50%; border: 3px solid var(--line); background: var(--surface); }

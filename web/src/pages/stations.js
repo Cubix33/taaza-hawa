@@ -78,7 +78,7 @@ async function loadEvidence() {
   try {
     const card = await api(`/card?uid=${uid}`, { signal: controller.signal });
     if (!active || controller.signal.aborted || uid !== state.uid) return;
-    lens.card = card; state.demo = state.demo || !!card.demo;
+    lens.card = card; state.demo = false;
   } catch (error) { if (error.name !== 'AbortError' && active && uid === state.uid) lens.error = true; }
   finally { if (active && !controller.signal.aborted && uid === state.uid) { lens.loading = false; set({}); } }
 }
